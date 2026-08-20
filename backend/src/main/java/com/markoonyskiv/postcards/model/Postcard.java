@@ -26,17 +26,14 @@ public class Postcard {
 
     private Integer year;
 
-    @Column(nullable = false)
     private String author;
 
-    @Column(nullable = false)
     private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private PostcardColor color;
 
-    @Column(nullable = false)
     private String location;
 
     @Column(name = "front_image_url", nullable = false, length = 2048)
