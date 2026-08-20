@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postcards-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: postcards
+      POSTGRES_USER: postcards
+      POSTGRES_PASSWORD: postcards
+    ports:
+      - "5432:5432"
+    volumes:
+      - postcards-db-data:/var/lib/postgresql/data
+
+volumes:
+  postcards-db-data:
