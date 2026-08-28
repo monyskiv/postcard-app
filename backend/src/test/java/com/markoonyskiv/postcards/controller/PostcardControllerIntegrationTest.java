@@ -13,11 +13,13 @@ import com.markoonyskiv.postcards.dto.PostcardRequest;
 import com.markoonyskiv.postcards.model.Postcard;
 import com.markoonyskiv.postcards.model.PostcardColor;
 import com.markoonyskiv.postcards.repository.PostcardRepository;
+import com.markoonyskiv.postcards.security.JwtService;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +37,13 @@ class PostcardControllerIntegrationTest {
 
     @Autowired
     private PostcardRepository postcardRepository;
+
+    @Autowired
+    private JwtService jwtService;
+
+    private String authHeader() {
+        return "Bearer " + jwtService.generateToken("admin1@example.com");
+    }
 
     private Postcard saveSamplePostcard() {
         Postcard postcard = new Postcard(
@@ -66,6 +75,7 @@ class PostcardControllerIntegrationTest {
         PostcardRequest request = validRequest();
 
         mockMvc.perform(post("/api/postcards")
+                        .header(HttpHeaders.AUTHORIZATION, authHeader())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -81,6 +91,7 @@ class PostcardControllerIntegrationTest {
                 """;
 
         mockMvc.perform(post("/api/postcards")
+                        .header(HttpHeaders.AUTHORIZATION, authHeader())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidJson))
                 .andExpect(status().isBadRequest());
@@ -119,6 +130,7 @@ class PostcardControllerIntegrationTest {
         PostcardRequest request = validRequest();
 
         mockMvc.perform(put("/api/postcards/{id}", saved.getId())
+                        .header(HttpHeaders.AUTHORIZATION, authHeader())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -130,6 +142,7 @@ class PostcardControllerIntegrationTest {
     @Test
     void updatePostcard_missing_returns404() throws Exception {
         mockMvc.perform(put("/api/postcards/{id}", UUID.randomUUID())
+                        .header(HttpHeaders.AUTHORIZATION, authHeader())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest())))
                 .andExpect(status().isNotFound());
@@ -139,13 +152,15 @@ class PostcardControllerIntegrationTest {
     void deletePostcard_existing_returns204() throws Exception {
         Postcard saved = saveSamplePostcard();
 
-        mockMvc.perform(delete("/api/postcards/{id}", saved.getId()))
+        mockMvc.perform(delete("/api/postcards/{id}", saved.getId())
+                        .header(HttpHeaders.AUTHORIZATION, authHeader()))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void deletePostcard_missing_returns404() throws Exception {
-        mockMvc.perform(delete("/api/postcards/{id}", UUID.randomUUID()))
+        mockMvc.perform(delete("/api/postcards/{id}", UUID.randomUUID())
+                        .header(HttpHeaders.AUTHORIZATION, authHeader()))
                 .andExpect(status().isNotFound());
     }
 }

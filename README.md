@@ -50,6 +50,48 @@ Runs on `http://localhost:5173`.
 
 Open `http://localhost:5173` in a browser. The homepage fetches `/api/health` from the backend and displays the result — you should see `status: ok`.
 
+## Admin authentication
+
+`GET` endpoints under `/api/postcards` stay public. Creating, updating, or deleting a postcard requires a JWT obtained by logging in as one of the seeded admin accounts.
+
+The signing secret is read from the `JWT_SECRET` env var (see `backend/.env.example`); if unset, an insecure development-only default is used (see `application.yml`) — always set a real value before any real deployment. Tokens expire after 24 hours.
+
+**1. Log in to get a token** (using the local-dev placeholder credentials — substitute your own if you set `ADMIN1_EMAIL`/`ADMIN1_PASSWORD`):
+
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin1@example.com","password":"ChangeMe123!"}'
+# {"token":"eyJhbGciOiJIUzI1NiJ9...."}
+```
+
+A wrong password or unknown email returns `401 Unauthorized`.
+
+**2. Use the token to call a protected endpoint** — save it to a variable and pass it as a Bearer token:
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin1@example.com","password":"ChangeMe123!"}' | jq -r .token)
+
+curl -X POST http://localhost:8080/api/postcards \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Greetings from Odesa",
+    "year": 1928,
+    "author": "Unknown",
+    "description": "A view of the opera house.",
+    "color": "BLACK_AND_WHITE",
+    "location": "Odesa, Ukraine",
+    "frontImageUrl": "https://example.com/odesa-front.jpg",
+    "backImageUrl": "https://example.com/odesa-back.jpg"
+  }'
+# 201 Created with the new postcard
+```
+
+Omitting the `Authorization` header, or sending a malformed/expired/invalid token, returns `401 Unauthorized` without reaching the controller. `PUT /api/postcards/{id}` and `DELETE /api/postcards/{id}` work the same way — same header, no token required for `GET`.
+
 ## Project structure
 
 ```
