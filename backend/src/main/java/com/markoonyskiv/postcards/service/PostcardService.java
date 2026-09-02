@@ -46,4 +46,8 @@ public class PostcardService {
         Postcard existing = getById(id);
         postcardRepository.delete(existing);
     }
+
+    public Postcard save(Postcard postcard) {
+        return postcardRepository.save(postcard);
+    }
 }
