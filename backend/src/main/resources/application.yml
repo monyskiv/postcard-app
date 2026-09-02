@@ -18,8 +18,24 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 30MB
 
 app:
   jwt:
     secret: ${JWT_SECRET:dev-only-insecure-default-secret-change-before-any-real-deployment}
     expiration-ms: 86400000
+  r2:
+    # Defaults are non-blank placeholders (not valid credentials) purely so
+    # the app/tests can start without real R2 config. Uploads will fail at
+    # call time until real values are set - see backend/.env.example.
+    account-id: ${R2_ACCOUNT_ID:dev-only-placeholder}
+    access-key-id: ${R2_ACCESS_KEY_ID:dev-only-placeholder}
+    secret-access-key: ${R2_SECRET_ACCESS_KEY:dev-only-placeholder}
+    bucket-name: ${R2_BUCKET_NAME:postcards}
+    public-base-url: ${R2_PUBLIC_BASE_URL:https://dev-only-placeholder.invalid}
+  image:
+    max-file-size-bytes: 10485760 # 10MB
+    max-width-px: 1600
