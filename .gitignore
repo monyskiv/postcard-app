@@ -6,6 +6,7 @@
 .env.local
 
 # Backend (Maven / Spring Boot)
+backend/env/
 backend/target/
 backend/.mvn/wrapper/maven-wrapper.jar
 !backend/**/src/main/**/target/
