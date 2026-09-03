@@ -25,11 +25,20 @@ public class PostcardImageService {
 
         Postcard postcard = postcardService.getById(id);
         if (hasFront) {
+            imageStorageService.deleteIfPresent(postcard.getFrontImageUrl());
             postcard.setFrontImageUrl(imageStorageService.store(id, "front", front));
         }
         if (hasBack) {
+            imageStorageService.deleteIfPresent(postcard.getBackImageUrl());
             postcard.setBackImageUrl(imageStorageService.store(id, "back", back));
         }
         return postcardService.save(postcard);
+    }
+
+    public void deletePostcardAndImages(UUID id) {
+        Postcard postcard = postcardService.getById(id);
+        imageStorageService.deleteIfPresent(postcard.getFrontImageUrl());
+        imageStorageService.deleteIfPresent(postcard.getBackImageUrl());
+        postcardService.delete(id);
     }
 }

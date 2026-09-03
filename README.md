@@ -152,6 +152,24 @@ curl -s http://localhost:8080/api/postcards/$ID | jq -r .frontImageUrl
 
 You should see "Ukrainian Postcards" repeated diagonally across the image, semi-transparent and legible over both light and dark areas of the photo, without hiding the postcard itself.
 
+**5. Deleting a postcard also deletes its images from R2** — `DELETE /api/postcards/{id}` removes the front/back objects from the bucket before removing the DB row (a postcard whose images were never uploaded — still pointing at some other URL — deletes cleanly too, nothing to remove). Confirm the image is actually gone with a `HEAD` request before and after:
+
+```bash
+FRONT_URL=$(curl -s http://localhost:8080/api/postcards/$ID | jq -r .frontImageUrl)
+curl -I "$FRONT_URL"
+# HTTP/1.1 200 before deleting
+
+curl -X DELETE "http://localhost:8080/api/postcards/$ID" -H "Authorization: Bearer $TOKEN"
+# 204
+
+curl -I "$FRONT_URL"
+# HTTP/1.1 404 — the object is gone from R2, not just the DB row
+```
+
+Same thing is visible in the Cloudflare dashboard (R2 → your bucket → `postcards/<id>/`) — the folder should be empty/gone immediately after the delete call.
+
+Re-uploading an image on a postcard that already has one works the same way: the old R2 object is deleted before the new one is stored, so replacing a photo never leaves the previous file behind.
+
 ## Project structure
 
 ```
