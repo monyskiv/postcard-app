@@ -31,3 +31,16 @@ export async function getPostcards(
   }
   return response.json();
 }
+
+export async function searchPostcards(
+  q: string,
+  page: number,
+  size: number,
+): Promise<PagedResponse<PostcardSummary>> {
+  const params = new URLSearchParams({ q, page: String(page), size: String(size) });
+  const response = await fetch(`${API_URL}/api/postcards/search?${params}`);
+  if (!response.ok) {
+    throw new Error(`Failed to search postcards (status ${response.status})`);
+  }
+  return response.json();
+}

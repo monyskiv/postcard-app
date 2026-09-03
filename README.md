@@ -197,6 +197,42 @@ Then open `http://localhost:5173/` and check:
 - **Pagination** — 12 postcards per page. Create more than 12 to get a second page; "Previous"/"Next" should enable/disable correctly at the first/last page, and the "Page X of Y" label should update.
 - **Card navigation** — clicking a card should go to `/postcards/<id>` and show "Detail page coming soon" with that postcard's ID. The URL bar should update (it's a real route, not a modal), and browser back should return to the grid.
 
+## Search
+
+`GET /api/postcards/search?q=...&color=...&year=...&location=...` — all params optional, same paginated response shape as `GET /api/postcards`. `q` matches (case-insensitive, partial) across `title`, `author`, `location`, and `description`; `color`/`year`/`location` are independent exact/partial filters that combine with `q` via AND when several are given. No auth required — it's public like the rest of the read endpoints. No new env vars.
+
+**Backend — curl examples** (using the same sample postcards from "Browse page" above, or create your own):
+
+```bash
+# Partial, case-insensitive match — matches "Paris, France" in location
+curl -s "http://localhost:8080/api/postcards/search?q=paris" | jq
+
+# Matches free text against description too
+curl -s "http://localhost:8080/api/postcards/search?q=eiffel" | jq
+
+# Filter by color only (no text query)
+curl -s "http://localhost:8080/api/postcards/search?color=BLACK_AND_WHITE" | jq
+
+# Filter by year only
+curl -s "http://localhost:8080/api/postcards/search?year=1950" | jq
+
+# Combine a text query with a filter
+curl -s "http://localhost:8080/api/postcards/search?q=ukraine&color=COLOR" | jq
+
+# No params at all - same as GET /api/postcards
+curl -s "http://localhost:8080/api/postcards/search" | jq
+
+# No matches - 200 with empty content, not an error
+curl -s "http://localhost:8080/api/postcards/search?q=nonexistentxyz" | jq
+```
+
+**Frontend** — the search box lives above the grid on the homepage. To confirm debouncing and the empty-results state in the browser:
+
+- Type a query and watch the Network tab (or just watch the grid) — the grid shouldn't update, and no request should fire, until ~300ms after you stop typing. Typing "paris" at a normal pace should produce exactly one request to `/api/postcards/search`, not five.
+- While results are showing, the grid replaces the normal browse view entirely (pagination still works, now paginating the search results).
+- Type something that matches nothing (e.g. `zzzznomatch`) — you should see "No postcards match your search." (distinct from the "No postcards yet" message shown when the whole collection is empty).
+- Clear the search box (or click the input's native × ) — the grid should return to the normal paginated browse view, starting back at page 1.
+
 ## Project structure
 
 ```

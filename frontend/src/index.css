@@ -116,6 +116,26 @@ code {
   text-align: left;
 }
 
+.search-input {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  margin-top: 16px;
+  padding: 10px 14px;
+  font: inherit;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
 .status-message {
   padding: 48px 0;
   text-align: center;
