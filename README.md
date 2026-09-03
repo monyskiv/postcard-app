@@ -195,7 +195,7 @@ Then open `http://localhost:5173/` and check:
 - **Empty state** — with zero postcards (delete them all via `DELETE /api/postcards/{id}`), the page should show "No postcards yet. Check back soon." rather than a blank screen.
 - **Loading state** — briefly visible on first load/page change ("Loading postcards…"); easiest to see on a throttled network (DevTools → Network → Slow 3G) or just watch closely on refresh.
 - **Pagination** — 12 postcards per page. Create more than 12 to get a second page; "Previous"/"Next" should enable/disable correctly at the first/last page, and the "Page X of Y" label should update.
-- **Card navigation** — clicking a card should go to `/postcards/<id>` and show "Detail page coming soon" with that postcard's ID. The URL bar should update (it's a real route, not a modal), and browser back should return to the grid.
+- **Card navigation** — clicking a card should go to `/postcards/<id>` and show that postcard's detail page (see "Postcard detail page" below). The URL bar should update (it's a real route, not a modal), and browser back should return to the grid.
 
 ## Search
 
@@ -232,6 +232,41 @@ curl -s "http://localhost:8080/api/postcards/search?q=nonexistentxyz" | jq
 - While results are showing, the grid replaces the normal browse view entirely (pagination still works, now paginating the search results).
 - Type something that matches nothing (e.g. `zzzznomatch`) — you should see "No postcards match your search." (distinct from the "No postcards yet" message shown when the whole collection is empty).
 - Clear the search box (or click the input's native × ) — the grid should return to the normal paginated browse view, starting back at page 1.
+
+## Postcard detail page
+
+`/postcards/:id` fetches `GET /api/postcards/{id}` and shows the full front and back images (larger than the grid thumbnails — this is the primary view), plus all metadata: title, year, author, description, color, location. A "← Back to browse" link returns to the homepage. No new env vars.
+
+While building this, fixed a real bug it surfaced: a malformed id (not a valid UUID — e.g. `/postcards/not-a-real-id`) was returning `401 Unauthorized` instead of `400 Bad Request`. The cause: Spring MVC's `MethodArgumentTypeMismatchException` for the bad UUID triggers Boot's internal forward to `/error` to render the error body, and since `/error` wasn't itself listed as `permitAll`, Spring Security re-evaluated that forward as a fresh anonymous request against `anyRequest().authenticated()` and masked the real 400 with its own 401. Fixed by permitting `/error` in `SecurityConfig`, with a regression test (`getPostcard_malformedId_returns400NotUnauthorized`). The frontend treats both 404 (well-formed id, doesn't exist) and 400 (malformed id) as "not found" — a user typing a bad URL shouldn't be able to tell the difference.
+
+**To get a real id to test with**, create a postcard and upload real images (reusing the same flow from "Image upload" above):
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin1@example.com","password":"ChangeMe123!"}' | jq -r .token)
+
+ID=$(curl -s -X POST http://localhost:8080/api/postcards \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Greetings from Lviv","year":1932,"author":"Unknown","description":"A hand-tinted view of the old town square.","color":"COLOR","location":"Lviv, Ukraine","frontImageUrl":"placeholder","backImageUrl":"placeholder"}' \
+  | jq -r .id)
+
+curl -s -X POST "http://localhost:8080/api/postcards/$ID/images" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "front=@/path/to/front.jpg;type=image/jpeg" \
+  -F "back=@/path/to/back.jpg;type=image/jpeg" > /dev/null
+
+echo "http://localhost:5173/postcards/$ID"
+```
+
+Then in the browser, check:
+
+- **Valid id** — open the URL printed above (or click any card with real images from the grid). You should see both images at a reasonable size side by side, the title as a heading, and a metadata block with year/author/color/location, plus the description text below.
+- **Loading state** — briefly visible on navigation ("Loading postcard…"); easiest to catch on a throttled network (DevTools → Network → Slow 3G).
+- **Well-formed but nonexistent id** — try `http://localhost:5173/postcards/00000000-0000-0000-0000-000000000000` (or any real id you've since deleted). Should show "Postcard not found. It may have been removed." — not a blank page, not a console error.
+- **Malformed id** — try `http://localhost:5173/postcards/not-a-real-id`. Same "not found" message (verifies the 400-vs-401 fix above didn't leak through as a raw error).
+- **Back to browse** — click the link at the top; should return to the grid at `/`.
 
 ## Seeding sample data
 
