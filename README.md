@@ -48,7 +48,7 @@ Runs on `http://localhost:5173`.
 
 ## 4. Verify end to end
 
-Open `http://localhost:5173` in a browser. The homepage fetches `/api/health` from the backend and displays the result — you should see `status: ok`.
+Open `http://localhost:5173` in a browser. The homepage fetches `GET /api/postcards` from the backend and renders the results as a grid — see "Browse page" below for what to expect and how to test it with real data.
 
 ## Admin authentication
 
@@ -169,6 +169,33 @@ curl -I "$FRONT_URL"
 Same thing is visible in the Cloudflare dashboard (R2 → your bucket → `postcards/<id>/`) — the folder should be empty/gone immediately after the delete call.
 
 Re-uploading an image on a postcard that already has one works the same way: the old R2 object is deleted before the new one is stored, so replacing a photo never leaves the previous file behind.
+
+## Browse page
+
+The homepage (`http://localhost:5173/`) fetches `GET /api/postcards` and renders a responsive grid of cards (front image thumbnail, title, year). No new env vars or config — it uses the existing `VITE_API_URL` the frontend already reads for everything else. React Router was added (`react-router-dom`) to support this and the new `/postcards/:id` route.
+
+**To see it with real data**, create a few postcards first (no auth needed to view, but creating them is admin-only — see "Admin authentication" above for getting a token):
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin1@example.com","password":"ChangeMe123!"}' | jq -r .token)
+
+for i in 1 2 3; do
+  curl -s -X POST http://localhost:8080/api/postcards \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"title\":\"Sample Postcard $i\",\"year\":$((1900+i)),\"author\":\"Unknown\",\"description\":\"...\",\"color\":\"COLOR\",\"location\":\"City $i\",\"frontImageUrl\":\"https://placehold.co/400x300?text=Front+$i\",\"backImageUrl\":\"https://placehold.co/400x300?text=Back+$i\"}" > /dev/null
+done
+```
+
+Then open `http://localhost:5173/` and check:
+
+- **Grid** — a card per postcard showing the front image, title, and year, reflowing responsively (try resizing the window/narrowing to mobile width).
+- **Empty state** — with zero postcards (delete them all via `DELETE /api/postcards/{id}`), the page should show "No postcards yet. Check back soon." rather than a blank screen.
+- **Loading state** — briefly visible on first load/page change ("Loading postcards…"); easiest to see on a throttled network (DevTools → Network → Slow 3G) or just watch closely on refresh.
+- **Pagination** — 12 postcards per page. Create more than 12 to get a second page; "Previous"/"Next" should enable/disable correctly at the first/last page, and the "Page X of Y" label should update.
+- **Card navigation** — clicking a card should go to `/postcards/<id>` and show "Detail page coming soon" with that postcard's ID. The URL bar should update (it's a real route, not a modal), and browser back should return to the grid.
 
 ## Project structure
 
