@@ -81,16 +81,22 @@ Two admin accounts, JWT-based session, simple email+password login. No public ac
 
 At 500–5,000 postcards with 2 images each, budget for image storage: even at ~2MB/image average, 5,000 postcards × 2 images × 2MB ≈ 20GB — likely to exceed R2's 10GB free tier eventually. Worth compressing/resizing images on upload (e.g. cap at 1600px wide) to stay under the limit longer.
 
+## Watermarking
+Images are watermarked server-side, baked into the pixels, before being stored in R2 — not a client-side/CSS overlay, since those don't survive a right-click save and would defeat the purpose. No clean/original copy is kept in the cloud (originals already live on the external hard drive used for uploading, so a duplicate unwatermarked cloud copy is unnecessary storage cost). Only the watermarked version is ever stored and served.
+
+Pipeline at upload time: resize (cap ~1600px wide) → watermark → store in R2. Watermark text starts as "Ukrainian Postcards" (placeholder, configurable — expect this to change).
+
 ## Suggested Build Order (small, reviewable chunks — good fit for stacked PRs)
 1. Postcard entity + repository + migration
 2. CRUD REST endpoints (no auth yet)
 3. Admin auth (JWT, two seeded accounts)
 4. Lock down admin endpoints behind auth
 5. Image upload → R2 integration
-6. Frontend: home + browse/grid page
-7. Frontend: search box (dynamic)
-8. Frontend: postcard detail page
-9. Frontend: admin dashboard (CRUD UI)
-10. Deploy each layer, wire up env vars/URLs between them
+6. Server-side watermarking, baked into the upload pipeline (resize → watermark → store)
+7. Frontend: home + browse/grid page
+8. Frontend: search box (dynamic)
+9. Frontend: postcard detail page
+10. Frontend: admin dashboard (CRUD UI)
+11. Deploy each layer, wire up env vars/URLs between them
 
 Each numbered item above is a reasonable single PR (or stacked PR) — small enough to review, and each one leaves the app in a working state.
