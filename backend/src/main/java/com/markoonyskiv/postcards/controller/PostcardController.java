@@ -5,11 +5,13 @@ import com.markoonyskiv.postcards.dto.PostcardRequest;
 import com.markoonyskiv.postcards.dto.PostcardResponse;
 import com.markoonyskiv.postcards.dto.PostcardSummaryResponse;
 import com.markoonyskiv.postcards.model.Postcard;
+import com.markoonyskiv.postcards.model.PostcardColor;
 import com.markoonyskiv.postcards.service.PostcardImageService;
 import com.markoonyskiv.postcards.service.PostcardService;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +42,17 @@ public class PostcardController {
     @GetMapping
     public PagedModel<PostcardSummaryResponse> list(Pageable pageable) {
         return new PagedModel<>(postcardService.list(pageable).map(PostcardMapper::toSummary));
+    }
+
+    @GetMapping("/search")
+    public PagedModel<PostcardSummaryResponse> search(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) PostcardColor color,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String location,
+            Pageable pageable) {
+        Page<Postcard> results = postcardService.search(q, color, year, location, pageable);
+        return new PagedModel<>(results.map(PostcardMapper::toSummary));
     }
 
     @GetMapping("/{id}")
