@@ -49,8 +49,8 @@ Two admin accounts (you + your friend), no public self-registration.
 - `POST /api/auth/login` — returns JWT
 - `POST /api/postcards` — create
 - `PUT /api/postcards/{id}` — update
-- `DELETE /api/postcards/{id}` — delete
-- `POST /api/postcards/{id}/images` — upload front/back images (proxies to R2 or issues a pre-signed upload URL)
+- `DELETE /api/postcards/{id}` — delete record; also deletes the associated front/back images from R2 so no orphaned objects remain in the bucket
+- `POST /api/postcards/{id}/images` — upload front/back images (proxies to R2 or issues a pre-signed upload URL). Re-uploading (replacing an existing image on a postcard that already has one) deletes the old R2 object before storing the new one, for the same reason.
 
 ## Pages
 
