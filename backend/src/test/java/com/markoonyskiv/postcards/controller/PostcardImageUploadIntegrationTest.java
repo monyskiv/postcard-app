@@ -150,6 +150,41 @@ class PostcardImageUploadIntegrationTest {
     }
 
     @Test
+    void uploadImages_bakesWatermarkIntoUploadedBytes() throws Exception {
+        Postcard saved = saveSamplePostcard();
+        ArgumentCaptor<RequestBody> bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+        when(r2Client.putObject(any(PutObjectRequest.class), bodyCaptor.capture()))
+                .thenReturn(PutObjectResponse.builder().build());
+
+        int width = 400;
+        int height = 300;
+        MockMultipartFile front =
+                new MockMultipartFile("front", "front.png", "image/png", samplePngBytes(width, height));
+
+        mockMvc.perform(multipart("/api/postcards/{id}/images", saved.getId())
+                        .file(front)
+                        .header(HttpHeaders.AUTHORIZATION, authHeader()))
+                .andExpect(status().isOk());
+
+        byte[] uploaded = bodyCaptor.getValue().contentStreamProvider().newStream().readAllBytes();
+        BufferedImage result = ImageIO.read(new ByteArrayInputStream(uploaded));
+        int originalRgb = Color.BLUE.getRGB();
+
+        long changedPixels = 0;
+        for (int y = 0; y < result.getHeight(); y++) {
+            for (int x = 0; x < result.getWidth(); x++) {
+                if (result.getRGB(x, y) != originalRgb) {
+                    changedPixels++;
+                }
+            }
+        }
+
+        long totalPixels = (long) result.getWidth() * result.getHeight();
+        double changedFraction = changedPixels / (double) totalPixels;
+        assertThat(changedFraction).isGreaterThan(0.01);
+    }
+
+    @Test
     void uploadImages_unsupportedContentType_returns400() throws Exception {
         Postcard saved = saveSamplePostcard();
         MockMultipartFile front = new MockMultipartFile("front", "front.gif", "image/gif", new byte[] {1, 2, 3});
