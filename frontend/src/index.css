@@ -109,3 +109,96 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+.browse-page,
+.detail-page {
+  padding: 24px;
+  text-align: left;
+}
+
+.status-message {
+  padding: 48px 0;
+  text-align: center;
+  color: var(--text);
+}
+
+.status-error {
+  color: #e5484d;
+}
+
+.postcard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.postcard-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  background: var(--bg);
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.postcard-card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+
+.postcard-card-image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--code-bg);
+  display: block;
+}
+
+.postcard-card-body {
+  padding: 12px;
+}
+
+.postcard-card-body h2 {
+  font-size: 16px;
+  margin: 0 0 4px;
+}
+
+.postcard-card-year {
+  color: var(--text);
+  font-size: 14px;
+  margin: 0;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.pagination button {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+  font: inherit;
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.back-link {
+  color: var(--accent);
+  text-decoration: none;
+}
