@@ -65,7 +65,7 @@ public class PostcardController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        postcardService.delete(id);
+        postcardImageService.deletePostcardAndImages(id);
         return ResponseEntity.noContent().build();
     }
 

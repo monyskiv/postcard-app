@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 /**
@@ -78,6 +79,25 @@ public class ImageStorageService {
                 RequestBody.fromBytes(jpegBytes));
 
         return publicBaseUrl + "/" + key;
+    }
+
+    /**
+     * Deletes the R2 object backing the given URL, if it actually points
+     * into this app's bucket (an unset/placeholder URL never uploaded
+     * through this service - e.g. left over from postcard creation - is
+     * silently ignored, as is a key that doesn't exist in R2: R2's delete
+     * is idempotent, so there's nothing to fail on either way).
+     */
+    public void deleteIfPresent(String imageUrl) {
+        String prefix = publicBaseUrl + "/";
+        if (imageUrl == null || !imageUrl.startsWith(prefix)) {
+            return;
+        }
+        String key = imageUrl.substring(prefix.length());
+        r2Client.deleteObject(DeleteObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build());
     }
 
     private void validate(MultipartFile file) {
