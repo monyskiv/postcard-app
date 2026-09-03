@@ -104,7 +104,9 @@ Configure R2 via env vars (see `backend/.env.example`):
 
 Without real values, the app still starts (using non-functional placeholders), but any upload attempt will fail when it actually calls R2.
 
-Uploads are validated (JPEG/PNG/WEBP only, 10MB max per file) and always re-encoded as JPEG, resized so width never exceeds 1600px (aspect ratio preserved) — this keeps R2 storage usage down, per the spec's free-tier budgeting.
+Uploads are validated (JPEG/PNG/WEBP only, 10MB max per file) and go through resize → watermark → compress before upload: always re-encoded as JPEG, resized so width never exceeds 1600px (aspect ratio preserved, keeps R2 storage down per the spec's free-tier budgeting), then watermarked. No unwatermarked copy is ever stored — the watermark is baked into the pixels before the image is uploaded, so it can't be stripped by viewing/saving the file.
+
+The watermark is a semi-transparent, repeating diagonal text pattern (tiled across the whole image, not a single corner) so it can't be defeated by cropping. Text defaults to "Ukrainian Postcards", read from `app.image.watermark-text` in `application.yml` (overridable via the `WATERMARK_TEXT` env var) — change it there rather than hardcoding it anywhere else; it's expected to change.
 
 **1. Create a postcard and log in** (or reuse an existing postcard's id):
 
@@ -140,6 +142,15 @@ curl -I "$(curl -s http://localhost:8080/api/postcards/$ID | jq -r .frontImageUr
 ```
 
 You can also check the Cloudflare dashboard (R2 → your bucket) and look for an object under `postcards/<id>/`, or list it with any S3-compatible client pointed at `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com` using your `R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY`.
+
+**4. Visually confirm the watermark** — open the `frontImageUrl`/`backImageUrl` from the response directly in a browser (or reuse the same URL from step 3):
+
+```bash
+curl -s http://localhost:8080/api/postcards/$ID | jq -r .frontImageUrl
+# paste the printed URL into a browser
+```
+
+You should see "Ukrainian Postcards" repeated diagonally across the image, semi-transparent and legible over both light and dark areas of the photo, without hiding the postcard itself.
 
 ## Project structure
 
