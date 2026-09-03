@@ -22,11 +22,14 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 /**
- * Validates, resizes, and uploads postcard images to R2. Every accepted
- * image is re-encoded as JPEG regardless of source format, which keeps
- * output compression predictable and sidesteps the lack of a WEBP encoder
- * in the JDK (WEBP uploads are still accepted and decoded via the
+ * Validates, resizes, watermarks, and uploads postcard images to R2. Every
+ * accepted image is re-encoded as JPEG regardless of source format, which
+ * keeps output compression predictable and sidesteps the lack of a WEBP
+ * encoder in the JDK (WEBP uploads are still accepted and decoded via the
  * TwelveMonkeys ImageIO plugin, just never written back out as WEBP).
+ *
+ * <p>The watermark is baked in before the image is ever uploaded - no
+ * unwatermarked copy is stored anywhere, in R2 or otherwise.
  */
 @Service
 public class ImageStorageService {
@@ -35,6 +38,7 @@ public class ImageStorageService {
     private static final float JPEG_QUALITY = 0.85f;
 
     private final S3Client r2Client;
+    private final WatermarkService watermarkService;
     private final String bucketName;
     private final String publicBaseUrl;
     private final long maxFileSizeBytes;
@@ -42,11 +46,13 @@ public class ImageStorageService {
 
     public ImageStorageService(
             S3Client r2Client,
+            WatermarkService watermarkService,
             @Value("${app.r2.bucket-name}") String bucketName,
             @Value("${app.r2.public-base-url}") String publicBaseUrl,
             @Value("${app.image.max-file-size-bytes}") long maxFileSizeBytes,
             @Value("${app.image.max-width-px}") int maxWidthPx) {
         this.r2Client = r2Client;
+        this.watermarkService = watermarkService;
         this.bucketName = bucketName;
         this.publicBaseUrl = publicBaseUrl;
         this.maxFileSizeBytes = maxFileSizeBytes;
@@ -54,12 +60,12 @@ public class ImageStorageService {
     }
 
     /**
-     * Validates, resizes/compresses, and uploads the given image under the
-     * given postcard/side, returning its public URL.
+     * Validates, resizes/watermarks/compresses, and uploads the given image
+     * under the given postcard/side, returning its public URL.
      */
     public String store(UUID postcardId, String side, MultipartFile file) {
         validate(file);
-        byte[] jpegBytes = resizeToJpeg(file);
+        byte[] jpegBytes = processToJpeg(file);
 
         String key = "postcards/%s/%s-%s.jpg".formatted(postcardId, side, UUID.randomUUID());
         r2Client.putObject(
@@ -88,7 +94,7 @@ public class ImageStorageService {
         }
     }
 
-    private byte[] resizeToJpeg(MultipartFile file) {
+    private byte[] processToJpeg(MultipartFile file) {
         BufferedImage source;
         try {
             source = ImageIO.read(new ByteArrayInputStream(file.getBytes()));
@@ -101,9 +107,10 @@ public class ImageStorageService {
 
         BufferedImage rgb = toRgb(source);
         BufferedImage scaled = scaleDownIfNeeded(rgb);
+        BufferedImage watermarked = watermarkService.apply(scaled);
 
         try {
-            return encodeJpeg(scaled);
+            return encodeJpeg(watermarked);
         } catch (IOException e) {
             throw new InvalidImageException("Could not process uploaded image");
         }
