@@ -5,6 +5,7 @@ import com.markoonyskiv.postcards.dto.PostcardRequest;
 import com.markoonyskiv.postcards.dto.PostcardResponse;
 import com.markoonyskiv.postcards.dto.PostcardSummaryResponse;
 import com.markoonyskiv.postcards.model.Postcard;
+import com.markoonyskiv.postcards.service.PostcardImageService;
 import com.markoonyskiv.postcards.service.PostcardService;
 import jakarta.validation.Valid;
 import java.net.URI;
@@ -19,7 +20,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
@@ -27,9 +30,11 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 public class PostcardController {
 
     private final PostcardService postcardService;
+    private final PostcardImageService postcardImageService;
 
-    public PostcardController(PostcardService postcardService) {
+    public PostcardController(PostcardService postcardService, PostcardImageService postcardImageService) {
         this.postcardService = postcardService;
+        this.postcardImageService = postcardImageService;
     }
 
     @GetMapping
@@ -62,5 +67,14 @@ public class PostcardController {
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         postcardService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/images")
+    public PostcardResponse uploadImages(
+            @PathVariable UUID id,
+            @RequestParam(required = false) MultipartFile front,
+            @RequestParam(required = false) MultipartFile back) {
+        Postcard updated = postcardImageService.uploadImages(id, front, back);
+        return PostcardMapper.toResponse(updated);
     }
 }

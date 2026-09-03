@@ -92,6 +92,55 @@ curl -X POST http://localhost:8080/api/postcards \
 
 Omitting the `Authorization` header, or sending a malformed/expired/invalid token, returns `401 Unauthorized` without reaching the controller. `PUT /api/postcards/{id}` and `DELETE /api/postcards/{id}` work the same way — same header, no token required for `GET`.
 
+## Image upload (Cloudflare R2)
+
+`POST /api/postcards/{id}/images` uploads front and/or back images for a postcard to Cloudflare R2 and updates `frontImageUrl`/`backImageUrl` with the resulting public URL. It's admin-only, same as the other mutating postcard endpoints.
+
+Configure R2 via env vars (see `backend/.env.example`):
+
+- `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` — used to build the S3 client and authenticate with R2's S3-compatible API.
+- `R2_BUCKET_NAME` — the target bucket.
+- `R2_PUBLIC_BASE_URL` — the hostname images are actually served from. R2's S3 API endpoint (built from `R2_ACCOUNT_ID`) only accepts signed requests, it's not publicly browsable, so this must be either the bucket's "Public Development URL" (`https://pub-<hash>.r2.dev`, enabled per-bucket in the Cloudflare dashboard) or a custom domain you've attached to the bucket. This is concatenated with the object key to build the URL stored on the postcard.
+
+Without real values, the app still starts (using non-functional placeholders), but any upload attempt will fail when it actually calls R2.
+
+Uploads are validated (JPEG/PNG/WEBP only, 10MB max per file) and always re-encoded as JPEG, resized so width never exceeds 1600px (aspect ratio preserved) — this keeps R2 storage usage down, per the spec's free-tier budgeting.
+
+**1. Create a postcard and log in** (or reuse an existing postcard's id):
+
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin1@example.com","password":"ChangeMe123!"}' | jq -r .token)
+
+ID=$(curl -s -X POST http://localhost:8080/api/postcards \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Test","author":"Unknown","description":"...","color":"COLOR","location":"Kyiv","frontImageUrl":"https://example.com/placeholder.jpg","backImageUrl":"https://example.com/placeholder.jpg"}' \
+  | jq -r .id)
+```
+
+**2. Upload images** — `front` and `back` are both optional, but at least one is required; each is a normal multipart file part:
+
+```bash
+curl -X POST "http://localhost:8080/api/postcards/$ID/images" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "front=@/path/to/front.jpg;type=image/jpeg" \
+  -F "back=@/path/to/back.jpg;type=image/jpeg"
+# 200 OK with the updated postcard, frontImageUrl/backImageUrl now point at R2
+```
+
+Omitting the token returns `401`. An unsupported content type, an oversized file, or a request with neither `front` nor `back` returns `400` with a JSON body like `{"message":"..."}`.
+
+**3. Verify the image actually landed in the bucket** — the response's `frontImageUrl`/`backImageUrl` should load directly in a browser or via curl (this fetches straight from `R2_PUBLIC_BASE_URL`, not through the backend):
+
+```bash
+curl -I "$(curl -s http://localhost:8080/api/postcards/$ID | jq -r .frontImageUrl)"
+# HTTP/1.1 200, content-type: image/jpeg
+```
+
+You can also check the Cloudflare dashboard (R2 → your bucket) and look for an object under `postcards/<id>/`, or list it with any S3-compatible client pointed at `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com` using your `R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY`.
+
 ## Project structure
 
 ```
