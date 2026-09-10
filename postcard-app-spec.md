@@ -96,7 +96,7 @@ Pipeline at upload time: resize (cap ~1600px wide) → watermark → store in R2
 7. Frontend: home + browse/grid page
 8. Frontend: search box (dynamic)
 9. Frontend: postcard detail page
-10. Frontend: admin dashboard (CRUD UI)
+10. Frontend: admin dashboard (CRUD UI) — metadata creation and image upload are kept as two distinct steps in the UI, matching the two separate backend calls (POST /api/postcards, then POST /api/postcards/{id}/images), rather than one combined form
 11. Deploy each layer, wire up env vars/URLs between them
 
 Each numbered item above is a reasonable single PR (or stacked PR) — small enough to review, and each one leaves the app in a working state.
