@@ -233,6 +233,18 @@ curl -s "http://localhost:8080/api/postcards/search?q=nonexistentxyz" | jq
 - Type something that matches nothing (e.g. `zzzznomatch`) — you should see "No postcards match your search." (distinct from the "No postcards yet" message shown when the whole collection is empty).
 - Clear the search box (or click the input's native × ) — the grid should return to the normal paginated browse view, starting back at page 1.
 
+## Seeding sample data
+
+`scripts/seed-dummy-data.sh` logs in as an admin, creates 12 made-up postcard records, and uploads a small set of placeholder images (downloaded once from picsum.photos into `~/Desktop/postcard-seed-images`) as each one's front/back images — a quick way to populate the browse grid/search with more than a couple of rows instead of creating postcards one at a time via curl.
+
+Requires `SEED_ADMIN_PASSWORD` (password for one of the seeded admin accounts) as an env var; `SEED_ADMIN_EMAIL` is optional and defaults to `admin1@example.com`.
+
+```bash
+SEED_ADMIN_PASSWORD='ChangeMe123!' bash scripts/seed-dummy-data.sh
+```
+
+Note: the script's `curl -o` image download doesn't follow picsum.photos' redirect (no `-L`), so as written it saves empty files and every image upload silently fails validation — the script doesn't check the upload response, so it reports success regardless. The 12 postcard records still get created, just without real images, until that's fixed.
+
 ## Project structure
 
 ```
@@ -240,4 +252,4 @@ curl -s "http://localhost:8080/api/postcards/search?q=nonexistentxyz" | jq
 /frontend  React + Vite + TypeScript
 ```
 
-No business logic yet — this is setup only, confirming both halves run and talk to each other.
+Postcard CRUD API secured behind JWT-based admin auth, Cloudflare R2 image upload with resizing/watermarking, dynamic search, and a browse grid on the frontend — see the sections above for details on each.
