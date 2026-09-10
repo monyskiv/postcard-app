@@ -116,6 +116,18 @@ class PostcardControllerIntegrationTest {
     }
 
     @Test
+    void getPostcard_malformedId_returns400NotUnauthorized() throws Exception {
+        // Regression test: a non-UUID id fails argument binding inside the
+        // controller (after the public GET rule already let the request
+        // through), which triggers Boot's internal /error forward. Unless
+        // /error is itself permitted, Spring Security re-evaluates that
+        // forward as a fresh anonymous request against anyRequest()
+        // .authenticated() and masks the real 400 with a 401.
+        mockMvc.perform(get("/api/postcards/not-a-uuid"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void listPostcards_returnsPageOfSummaries() throws Exception {
         saveSamplePostcard();
 

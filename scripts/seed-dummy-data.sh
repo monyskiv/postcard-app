@@ -7,7 +7,7 @@ PASSWORD="${SEED_ADMIN_PASSWORD:?Set SEED_ADMIN_PASSWORD env var before running 
 IMG_DIR="$HOME/Desktop/postcard-seed-images"
 
 echo "Logging in..."
-TOKEN=$(curl -s -X POST "$API/auth/login" -H "Content-Type: application/json" -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" | jq -r .token)
+TOKEN=$(curl -sL -X POST "$API/auth/login" -H "Content-Type: application/json" -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" | jq -r .token)
 
 if [ "$TOKEN" == "null" ] || [ -z "$TOKEN" ]; then
   echo "Login failed — check EMAIL/PASSWORD at the top of this script."
@@ -21,7 +21,7 @@ mkdir -p "$IMG_DIR"
 echo "Downloading placeholder images..."
 for i in 1 2 3 4; do
   if [ ! -f "$IMG_DIR/sample$i.jpg" ]; then
-    curl -s -o "$IMG_DIR/sample$i.jpg" "https://picsum.photos/seed/postcard$i/800/600"
+    curl -sL -o "$IMG_DIR/sample$i.jpg" "https://picsum.photos/seed/postcard$i/800/600"
   fi
 done
 echo "Images ready in $IMG_DIR"
