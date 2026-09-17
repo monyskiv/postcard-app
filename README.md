@@ -2,6 +2,13 @@
 
 Full-stack scaffold: Spring Boot backend (`/backend`) + React/Vite frontend (`/frontend`), backed by Postgres in Docker.
 
+## Live Deployment
+
+- Frontend: https://postcard-app-one.vercel.app
+- Backend: https://postcard-app-q9hm.onrender.com
+
+The backend is on Render's free tier and may take 30–60s to wake up on the first request after a period of inactivity.
+
 ## Prerequisites
 
 - Java 25
@@ -289,8 +296,6 @@ Requires `SEED_ADMIN_PASSWORD` (password for one of the seeded admin accounts) a
 SEED_ADMIN_PASSWORD='ChangeMe123!' bash scripts/seed-dummy-data.sh
 ```
 
-Note: the script's `curl -o` image download doesn't follow picsum.photos' redirect (no `-L`), so as written it saves empty files and every image upload silently fails validation — the script doesn't check the upload response, so it reports success regardless. The 12 postcard records still get created, just without real images, until that's fixed.
-
 ## Project structure
 
 ```
@@ -298,4 +303,4 @@ Note: the script's `curl -o` image download doesn't follow picsum.photos' redire
 /frontend  React + Vite + TypeScript
 ```
 
-Postcard CRUD API secured behind JWT-based admin auth, Cloudflare R2 image upload with resizing/watermarking, dynamic search, and a browse grid on the frontend — see the sections above for details on each.
+Postcard CRUD API secured behind JWT-based admin auth, Cloudflare R2 image upload with resizing/watermarking, dynamic search, a browse grid, a postcard detail page, and an admin dashboard for managing postcards and their images — see the sections above for details on each.
