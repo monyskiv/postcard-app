@@ -140,9 +140,9 @@ export function AdminDashboard({ token }: { token: string }) {
     }
   }
 
-  function handleImagesUpdated() {
+  function handleImagesUpdated(updated: PostcardDetail) {
+    setImagesTarget(updated);
     loadPostcards();
-    setImagesTarget(null);
   }
 
   function handleCloseForm() {
@@ -151,9 +151,9 @@ export function AdminDashboard({ token }: { token: string }) {
     setFormError(null);
   }
 
-  function handleCloseImages() {
+  const handleCloseImages = useCallback(() => {
     setImagesTarget(null);
-  }
+  }, []);
 
   return (
     <div className="admin-dashboard">
@@ -193,6 +193,7 @@ export function AdminDashboard({ token }: { token: string }) {
                   <tr key={postcard.id}>
                     <td>
                       <img
+                        key={postcard.frontImageUrl}
                         src={postcard.frontImageUrl}
                         alt=""
                         className="admin-thumb"
@@ -259,6 +260,7 @@ export function AdminDashboard({ token }: { token: string }) {
             token={token}
             postcard={imagesTarget}
             onUploaded={handleImagesUpdated}
+            onDone={handleCloseImages}
             onUnauthorized={logout}
           />
         </Modal>

@@ -146,6 +146,10 @@ code {
   color: #e5484d;
 }
 
+.status-success {
+  color: #30a46c;
+}
+
 .postcard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

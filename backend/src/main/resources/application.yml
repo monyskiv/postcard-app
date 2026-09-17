@@ -41,4 +41,4 @@ app:
     max-width-px: 1600
     # Placeholder text - expected to change. Overridable via env var so it
     # can be tweaked per-deployment without a code change.
-    watermark-text: ${WATERMARK_TEXT:Ukrainian Postcards}
+    watermark-text: ${WATERMARK_TEXT:Pavlyshyn Postcards}
