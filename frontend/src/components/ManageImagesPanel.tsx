@@ -42,8 +42,6 @@ export function ManageImagesPanel({ token, postcard, onUploaded, onUnauthorized 
 
   return (
     <div className="manage-images">
-      <h3>Manage images</h3>
-
       <div className="manage-images-current">
         <figure>
           <img
