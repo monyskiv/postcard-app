@@ -10,10 +10,11 @@ import {
 import { createPostcard, deletePostcard, updatePostcard, UnauthorizedError } from "../api/admin";
 import { PostcardMetadataForm, type PostcardMetadataFormValues } from "./PostcardMetadataForm";
 import { ManageImagesPanel } from "./ManageImagesPanel";
+import { Modal } from "./Modal";
 
 const PAGE_SIZE = 20;
 
-type PanelMode = "closed" | "create" | "edit";
+type FormMode = "closed" | "create" | "edit";
 type ListStatus = "loading" | "error" | "ready";
 
 export function AdminDashboard({ token }: { token: string }) {
@@ -25,10 +26,12 @@ export function AdminDashboard({ token }: { token: string }) {
   const [listStatus, setListStatus] = useState<ListStatus>("loading");
   const [listError, setListError] = useState<string | null>(null);
 
-  const [panelMode, setPanelMode] = useState<PanelMode>("closed");
-  const [activePostcard, setActivePostcard] = useState<PostcardDetail | null>(null);
-  const [panelError, setPanelError] = useState<string | null>(null);
+  const [formMode, setFormMode] = useState<FormMode>("closed");
+  const [formTarget, setFormTarget] = useState<PostcardDetail | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [imagesTarget, setImagesTarget] = useState<PostcardDetail | null>(null);
 
   const loadPostcards = useCallback(() => {
     setListStatus("loading");
@@ -49,17 +52,33 @@ export function AdminDashboard({ token }: { token: string }) {
   }, [loadPostcards]);
 
   function handleAddClick() {
-    setActivePostcard(null);
-    setPanelError(null);
-    setPanelMode("create");
+    setFormTarget(null);
+    setFormError(null);
+    setFormMode("create");
   }
 
   async function handleEditClick(id: string) {
-    setPanelError(null);
+    setListError(null);
     try {
       const detail = await getPostcard(id);
-      setActivePostcard(detail);
-      setPanelMode("edit");
+      setFormTarget(detail);
+      setFormError(null);
+      setFormMode("edit");
+    } catch (err) {
+      if (err instanceof PostcardNotFoundError) {
+        setListError("That postcard no longer exists.");
+        loadPostcards();
+      } else {
+        setListError(err instanceof Error ? err.message : "Failed to load postcard");
+      }
+    }
+  }
+
+  async function handleImagesClick(id: string) {
+    setListError(null);
+    try {
+      const detail = await getPostcard(id);
+      setImagesTarget(detail);
     } catch (err) {
       if (err instanceof PostcardNotFoundError) {
         setListError("That postcard no longer exists.");
@@ -75,9 +94,12 @@ export function AdminDashboard({ token }: { token: string }) {
 
     try {
       await deletePostcard(token, id);
-      if (activePostcard?.id === id) {
-        setPanelMode("closed");
-        setActivePostcard(null);
+      if (formTarget?.id === id) {
+        setFormMode("closed");
+        setFormTarget(null);
+      }
+      if (imagesTarget?.id === id) {
+        setImagesTarget(null);
       }
       loadPostcards();
     } catch (err) {
@@ -90,44 +112,47 @@ export function AdminDashboard({ token }: { token: string }) {
   }
 
   async function handleMetadataSubmit(values: PostcardMetadataFormValues) {
-    setPanelError(null);
+    setFormError(null);
     setSaving(true);
     try {
-      if (panelMode === "create") {
+      if (formMode === "create") {
         const created = await createPostcard(token, values);
-        setActivePostcard(created);
-        setPanelMode("edit");
-      } else if (panelMode === "edit" && activePostcard) {
-        const updated = await updatePostcard(
-          token,
-          activePostcard.id,
-          values,
-          activePostcard.frontImageUrl,
-          activePostcard.backImageUrl,
-        );
-        setActivePostcard(updated);
+        setFormMode("closed");
+        setFormTarget(null);
+        loadPostcards();
+        // Continue straight into the separate "manage images" step for the
+        // postcard just created, rather than requiring an extra click.
+        setImagesTarget(created);
+      } else if (formMode === "edit" && formTarget) {
+        await updatePostcard(token, formTarget.id, values, formTarget.frontImageUrl, formTarget.backImageUrl);
+        setFormMode("closed");
+        setFormTarget(null);
+        loadPostcards();
       }
-      loadPostcards();
     } catch (err) {
       if (err instanceof UnauthorizedError) {
         logout();
       } else {
-        setPanelError(err instanceof Error ? err.message : "Failed to save postcard");
+        setFormError(err instanceof Error ? err.message : "Failed to save postcard");
       }
     } finally {
       setSaving(false);
     }
   }
 
-  function handleImagesUpdated(updated: PostcardDetail) {
-    setActivePostcard(updated);
+  function handleImagesUpdated() {
     loadPostcards();
+    setImagesTarget(null);
   }
 
-  function handleClosePanel() {
-    setPanelMode("closed");
-    setActivePostcard(null);
-    setPanelError(null);
+  function handleCloseForm() {
+    setFormMode("closed");
+    setFormTarget(null);
+    setFormError(null);
+  }
+
+  function handleCloseImages() {
+    setImagesTarget(null);
   }
 
   return (
@@ -182,6 +207,9 @@ export function AdminDashboard({ token }: { token: string }) {
                     <td>{postcard.location ?? "—"}</td>
                     <td className="admin-row-actions">
                       <button onClick={() => handleEditClick(postcard.id)}>Edit</button>
+                      <button className="secondary" onClick={() => handleImagesClick(postcard.id)}>
+                        Images
+                      </button>
                       <button className="danger" onClick={() => handleDeleteClick(postcard.id, postcard.title)}>
                         Delete
                       </button>
@@ -213,32 +241,27 @@ export function AdminDashboard({ token }: { token: string }) {
         </>
       )}
 
-      {panelMode !== "closed" && (
-        <div className="admin-panel">
-          <div className="admin-panel-header">
-            <h2>{panelMode === "create" ? "Add postcard" : `Edit: ${activePostcard?.title ?? ""}`}</h2>
-            <button className="secondary" onClick={handleClosePanel}>
-              Close
-            </button>
-          </div>
-
+      {formMode !== "closed" && (
+        <Modal title={formMode === "create" ? "Add postcard" : `Edit: ${formTarget?.title ?? ""}`} onClose={handleCloseForm}>
           <PostcardMetadataForm
-            key={activePostcard?.id ?? "new"}
-            initial={activePostcard}
+            key={formTarget?.id ?? "new"}
+            initial={formTarget}
             onSubmit={handleMetadataSubmit}
             submitting={saving}
           />
-          {panelError && <p className="status-message status-error">{panelError}</p>}
+          {formError && <p className="status-message status-error">{formError}</p>}
+        </Modal>
+      )}
 
-          {activePostcard && (
-            <ManageImagesPanel
-              token={token}
-              postcard={activePostcard}
-              onUploaded={handleImagesUpdated}
-              onUnauthorized={logout}
-            />
-          )}
-        </div>
+      {imagesTarget && (
+        <Modal title={`Manage images: ${imagesTarget.title}`} onClose={handleCloseImages}>
+          <ManageImagesPanel
+            token={token}
+            postcard={imagesTarget}
+            onUploaded={handleImagesUpdated}
+            onUnauthorized={logout}
+          />
+        </Modal>
       )}
     </div>
   );
