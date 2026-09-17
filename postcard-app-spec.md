@@ -66,6 +66,8 @@ Dynamic search box filtering on `title`, `author`, `location`, `description` (si
 ## Auth
 Two admin accounts, JWT-based session, simple email+password login. No public accounts needed for v1 (browsing is open to everyone).
 
+**Known open item:** admin credentials are currently seeded once via a Flyway migration using placeholder values (admin1@example.com / ChangeMe123!, etc.) — these are NOT controlled by Render env vars (a migration only runs once, so changing env vars afterward has no effect on already-seeded rows). Before handing this off for real use, real credentials need to be set via a new migration (or a proper credential-management flow), not left as placeholders.
+
 ## Out of scope for v1 (explicitly deferred)
 - "Related postcards" / recommendations on the detail page
 - Structured location (lat/long, mapping)
