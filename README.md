@@ -26,6 +26,8 @@ cd backend
 
 Runs on `http://localhost:8080`. Connection settings are read from `DB_URL`, `DB_USER`, `DB_PASSWORD` env vars, defaulting to the local Docker Postgres above (see `src/main/resources/application.yml`).
 
+**Production:** `DB_URL`/`DB_USER`/`DB_PASSWORD` should come from a [Neon](https://neon.tech) project, not Render's own Postgres (see the spec's Hosting Plan). Paste Neon's connection string directly into `DB_URL` as given — `postgresql://user:password@ep-xxxx.region.aws.neon.tech/dbname?sslmode=require` — there's no need to reformat it into a `jdbc:` URL or split out the credentials yourself; `NeonDatabaseUrlEnvironmentPostProcessor` does that at startup. `DB_USER`/`DB_PASSWORD` can be left unset in that case, since the credentials embedded in the URL take precedence.
+
 Two admin accounts are seeded by a Flyway migration on first startup, using credentials read from `ADMIN1_EMAIL`/`ADMIN1_PASSWORD` and `ADMIN2_EMAIL`/`ADMIN2_PASSWORD` env vars (see `backend/.env.example`). **If these env vars are not set, insecure placeholder credentials are used instead** (`admin1@example.com` / `ChangeMe123!` and `admin2@example.com` / `ChangeMe456!`) — fine for local dev, but these placeholders must never be used in a real deployment. Since the migration only runs once, changing these env vars later has no effect on already-seeded rows — update the `admins` table directly (or add a new migration) to rotate credentials post-deployment.
 
 Verify:

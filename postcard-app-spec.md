@@ -74,9 +74,9 @@ Two admin accounts, JWT-based session, simple email+password login. No public ac
 ## Hosting Plan
 | Layer | Service | Free tier notes |
 |---|---|---|
-| Frontend | Vercel/Netlify | free, no real caveats |
+| Frontend | Vercel | free, no real caveats |
 | Backend | Render | free web service, cold starts after idle (~30–60s wake) |
-| Database | Render Postgres or Neon | free up to ~0.5–1GB, plenty for this dataset's text |
+| Database | Neon | free tier, no expiry (unlike Render's free Postgres, which expires 30 days after creation) |
 | Images | Cloudflare R2 | free up to 10GB storage, no egress fees |
 
 At 500–5,000 postcards with 2 images each, budget for image storage: even at ~2MB/image average, 5,000 postcards × 2 images × 2MB ≈ 20GB — likely to exceed R2's 10GB free tier eventually. Worth compressing/resizing images on upload (e.g. cap at 1600px wide) to stay under the limit longer.

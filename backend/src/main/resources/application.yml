@@ -5,6 +5,11 @@ spring:
   application:
     name: postcards
   datasource:
+    # DB_URL defaults to local Docker Postgres. In production it may instead
+    # be a libpq-style connection string (e.g. Neon's
+    # postgresql://user:password@host/db?sslmode=require) - see
+    # NeonDatabaseUrlEnvironmentPostProcessor, which rewrites that into the
+    # url/username/password below before this placeholder is even resolved.
     url: ${DB_URL:jdbc:postgresql://localhost:5432/postcards}
     username: ${DB_USER:postcards}
     password: ${DB_PASSWORD:postcards}
