@@ -132,6 +132,44 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<!-- The large-image tests exist to prove uploads fit a small heap,
+			     so they need a JVM with a small heap. Surefire's default
+			     execution skips them and a second execution runs just them
+			     with -Xmx96m: enough for the service's subsampled decode,
+			     nowhere near enough for the full-size decode it replaced. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>**/ImageStorageServiceLargeImageTest.java</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<execution>
+						<id>low-heap-image-tests</id>
+						<phase>test</phase>
+						<goals>
+							<goal>test</goal>
+						</goals>
+						<configuration>
+							<excludes combine.self="override"/>
+							<includes>
+								<include>**/ImageStorageServiceLargeImageTest.java</include>
+							</includes>
+							<argLine>-Xmx96m</argLine>
+							<!-- The tests gate themselves on this, so that running
+							     them from anywhere but this fork (an IDE, or a
+							     -Dtest=... pattern, which overrides the excludes
+							     above) reports a skip rather than failing against
+							     a heap that was never constrained. -->
+							<systemPropertyVariables>
+								<postcards.lowHeapImageTests>true</postcards.lowHeapImageTests>
+							</systemPropertyVariables>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.flywaydb</groupId>
 				<artifactId>flyway-maven-plugin</artifactId>
