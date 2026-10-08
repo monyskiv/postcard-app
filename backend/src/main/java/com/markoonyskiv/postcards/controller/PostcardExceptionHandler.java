@@ -1,6 +1,7 @@
 package com.markoonyskiv.postcards.controller;
 
 import com.markoonyskiv.postcards.dto.ErrorResponse;
+import com.markoonyskiv.postcards.service.ImageTooLargeException;
 import com.markoonyskiv.postcards.service.InvalidImageException;
 import com.markoonyskiv.postcards.service.PostcardNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,11 @@ public class PostcardExceptionHandler {
     @ExceptionHandler(InvalidImageException.class)
     public ResponseEntity<ErrorResponse> handleInvalidImage(InvalidImageException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(ImageTooLargeException.class)
+    public ResponseEntity<ErrorResponse> handleImageTooLarge(ImageTooLargeException ex) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(new ErrorResponse(ex.getMessage()));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)

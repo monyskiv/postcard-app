@@ -22,4 +22,10 @@ WORKDIR /app
 COPY --from=build /app/target/postcards-*.jar app.jar
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# The default max heap is ~25% of the container's memory, which on Render's
+# free 512MB instance is ~128MB - not enough to decode a phone photo even
+# with the subsampling ImageStorageService does. 70% leaves room for the
+# JVM's own off-heap use (metaspace, thread stacks, NIO buffers) while
+# roughly tripling the heap.
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=70", "-jar", "app.jar"]

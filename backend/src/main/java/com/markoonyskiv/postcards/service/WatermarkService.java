@@ -35,35 +35,41 @@ public class WatermarkService {
         this.text = text;
     }
 
-    public BufferedImage apply(BufferedImage source) {
-        int width = source.getWidth();
-        int height = source.getHeight();
+    /**
+     * Draws the watermark straight onto the given image's pixels. In place
+     * rather than onto a copy: the images this runs on are a sizeable
+     * fraction of the heap available on the deployment target, and the only
+     * caller has just decoded the image and has no use for an unmarked
+     * version of it.
+     */
+    public void applyInPlace(BufferedImage target) {
+        int width = target.getWidth();
+        int height = target.getHeight();
 
-        BufferedImage result = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        Graphics2D graphics = result.createGraphics();
-        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        graphics.drawImage(source, 0, 0, null);
+        Graphics2D graphics = target.createGraphics();
+        try {
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        Font font = new Font(Font.SANS_SERIF, Font.BOLD, Math.max(16, width / 20));
-        graphics.setFont(font);
-        FontMetrics metrics = graphics.getFontMetrics();
-        int textWidth = metrics.stringWidth(text);
-        int textHeight = metrics.getHeight();
-        int stepX = textWidth + font.getSize() * 3;
-        int stepY = textHeight + font.getSize() * 3;
+            Font font = new Font(Font.SANS_SERIF, Font.BOLD, Math.max(16, width / 20));
+            graphics.setFont(font);
+            FontMetrics metrics = graphics.getFontMetrics();
+            int textWidth = metrics.stringWidth(text);
+            int textHeight = metrics.getHeight();
+            int stepX = textWidth + font.getSize() * 3;
+            int stepY = textHeight + font.getSize() * 3;
 
-        graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, OPACITY));
-        graphics.rotate(Math.toRadians(ANGLE_DEGREES), width / 2.0, height / 2.0);
+            graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, OPACITY));
+            graphics.rotate(Math.toRadians(ANGLE_DEGREES), width / 2.0, height / 2.0);
 
-        int diagonal = (int) Math.ceil(Math.hypot(width, height));
-        for (int y = -diagonal; y < diagonal; y += stepY) {
-            for (int x = -diagonal; x < diagonal; x += stepX) {
-                drawOutlinedText(graphics, x, y);
+            int diagonal = (int) Math.ceil(Math.hypot(width, height));
+            for (int y = -diagonal; y < diagonal; y += stepY) {
+                for (int x = -diagonal; x < diagonal; x += stepX) {
+                    drawOutlinedText(graphics, x, y);
+                }
             }
+        } finally {
+            graphics.dispose();
         }
-
-        graphics.dispose();
-        return result;
     }
 
     private void drawOutlinedText(Graphics2D graphics, int x, int y) {

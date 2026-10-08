@@ -21,29 +21,19 @@ class WatermarkServiceTest {
     }
 
     @Test
-    void apply_preservesImageDimensions() {
-        BufferedImage source = solidColorImage(800, 500, Color.BLUE);
-
-        BufferedImage watermarked = watermarkService.apply(source);
-
-        assertThat(watermarked.getWidth()).isEqualTo(800);
-        assertThat(watermarked.getHeight()).isEqualTo(500);
-    }
-
-    @Test
-    void apply_changesASubstantialPortionOfPixels() {
+    void applyInPlace_changesASubstantialPortionOfPixels() {
         int width = 800;
         int height = 500;
         Color background = Color.BLUE;
-        BufferedImage source = solidColorImage(width, height, background);
+        BufferedImage image = solidColorImage(width, height, background);
         int originalRgb = background.getRGB();
 
-        BufferedImage watermarked = watermarkService.apply(source);
+        watermarkService.applyInPlace(image);
 
         long changedPixels = 0;
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                if (watermarked.getRGB(x, y) != originalRgb) {
+                if (image.getRGB(x, y) != originalRgb) {
                     changedPixels++;
                 }
             }
@@ -59,17 +49,17 @@ class WatermarkServiceTest {
     }
 
     @Test
-    void apply_producesDifferentOutputForDifferentText() {
-        BufferedImage source = solidColorImage(800, 500, Color.BLUE);
-        WatermarkService other = new WatermarkService("Something Else Entirely");
+    void applyInPlace_producesDifferentOutputForDifferentText() {
+        BufferedImage first = solidColorImage(800, 500, Color.BLUE);
+        BufferedImage second = solidColorImage(800, 500, Color.BLUE);
 
-        BufferedImage first = watermarkService.apply(source);
-        BufferedImage second = other.apply(source);
+        watermarkService.applyInPlace(first);
+        new WatermarkService("Something Else Entirely").applyInPlace(second);
 
         boolean anyPixelDiffers = false;
         outer:
-        for (int y = 0; y < source.getHeight(); y++) {
-            for (int x = 0; x < source.getWidth(); x++) {
+        for (int y = 0; y < first.getHeight(); y++) {
+            for (int x = 0; x < first.getWidth(); x++) {
                 if (first.getRGB(x, y) != second.getRGB(x, y)) {
                     anyPixelDiffers = true;
                     break outer;
