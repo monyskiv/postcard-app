@@ -4,6 +4,18 @@ import { getPostcard, PostcardNotFoundError, type PostcardDetail } from "../api/
 
 type Status = "loading" | "not-found" | "error" | "ready";
 
+// Rows shown beside the image, in display order; empty values are omitted.
+function detailRows(postcard: PostcardDetail): { label: string; value: string }[] {
+  const rows = [
+    { label: "Publisher", value: postcard.author },
+    { label: "Date", value: postcard.year != null ? String(postcard.year) : null },
+    { label: "Location", value: postcard.location },
+    { label: "Color", value: postcard.color === "COLOR" ? "Color" : "Black and white" },
+    { label: "Description", value: postcard.description },
+  ];
+  return rows.filter((row): row is { label: string; value: string } => !!row.value?.trim());
+}
+
 export function PostcardDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [postcard, setPostcard] = useState<PostcardDetail | null>(null);
@@ -57,49 +69,24 @@ export function PostcardDetailPage() {
       )}
 
       {status === "ready" && postcard && (
-        <>
-          <h1>{postcard.title}</h1>
-
-          <div className="detail-images">
-            <figure>
-              <img
-                src={postcard.frontImageUrl}
-                alt={`${postcard.title} — front`}
-                className="detail-image"
-              />
-              <figcaption>Front</figcaption>
-            </figure>
-            <figure>
-              <img
-                src={postcard.backImageUrl}
-                alt={`${postcard.title} — back`}
-                className="detail-image"
-              />
-              <figcaption>Back</figcaption>
-            </figure>
+        <div className="detail-layout">
+          <div className="detail-image-wrap">
+            <img src={postcard.frontImageUrl} alt={postcard.title} className="detail-image" />
           </div>
 
-          <dl className="detail-meta">
-            <div>
-              <dt>Year</dt>
-              <dd>{postcard.year ?? "Unknown"}</dd>
-            </div>
-            <div>
-              <dt>Author</dt>
-              <dd>{postcard.author ?? "Unknown"}</dd>
-            </div>
-            <div>
-              <dt>Color</dt>
-              <dd>{postcard.color === "COLOR" ? "Color" : "Black & white"}</dd>
-            </div>
-            <div>
-              <dt>Location</dt>
-              <dd>{postcard.location ?? "Unknown"}</dd>
-            </div>
-          </dl>
+          <div className="detail-info">
+            <h1>{postcard.title}</h1>
 
-          {postcard.description && <p className="detail-description">{postcard.description}</p>}
-        </>
+            <dl className="detail-meta">
+              {detailRows(postcard).map(({ label, value }) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -53,7 +53,7 @@ export function PostcardMetadataForm({ initial, onSubmit, submitting }: Props) {
         <input value={year} onChange={(e) => setYear(e.target.value)} placeholder="e.g. 1958" />
       </label>
       <label>
-        Author
+        Publisher
         <input value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Unknown" />
       </label>
       <label>

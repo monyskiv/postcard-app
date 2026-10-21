@@ -75,6 +75,7 @@ h2 {
 
 h1 {
   font-size: 56px;
+  line-height: 1.1;
   letter-spacing: -1.68px;
   margin: 32px 0;
   @media (max-width: 1024px) {
@@ -227,47 +228,41 @@ code {
   text-decoration: none;
 }
 
-.detail-page h1 {
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 32px;
+  align-items: start;
   margin-top: 20px;
 }
 
-.detail-images {
+.detail-image-wrap {
   display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  margin: 24px 0;
+  justify-content: center;
 }
 
-.detail-images figure {
-  flex: 1 1 320px;
-  max-width: 480px;
-  margin: 0;
-}
-
+/* Scans may be portrait or landscape: never crop, just fit within the box. */
 .detail-image {
   display: block;
-  width: 100%;
+  max-width: 100%;
+  max-height: 80vh;
+  width: auto;
   height: auto;
+  object-fit: contain;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--code-bg);
 }
 
-.detail-images figcaption {
-  margin-top: 8px;
-  text-align: center;
-  color: var(--text);
-  font-size: 14px;
+.detail-info h1 {
+  margin: 0 0 16px;
 }
 
 .detail-meta {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  margin: 24px 0;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  margin: 0;
 }
 
 .detail-meta > div {
@@ -288,11 +283,19 @@ code {
   margin: 0;
   color: var(--text-h);
   font-size: 16px;
+  line-height: 1.6;
+  white-space: pre-line;
 }
 
-.detail-description {
-  max-width: 640px;
-  line-height: 1.6;
+@media (max-width: 768px) {
+  .detail-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .detail-image {
+    max-height: 70vh;
+  }
 }
 
 .admin-page {
