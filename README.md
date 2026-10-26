@@ -44,7 +44,28 @@ curl http://localhost:8080/api/health
 # {"status":"ok"}
 ```
 
-Two admin accounts are seeded by a Flyway migration on first startup, using credentials read from `ADMIN1_EMAIL`/`ADMIN1_PASSWORD` and `ADMIN2_EMAIL`/`ADMIN2_PASSWORD` env vars (see `backend/.env.example`). **If these env vars are not set, insecure placeholder credentials are used instead** (`admin1@example.com` / `ChangeMe123!` and `admin2@example.com` / `ChangeMe456!`) — fine for local dev, but these placeholders must never be used in a real deployment. Since the migration only runs once, changing these env vars later has no effect on already-seeded rows — update the `admins` table directly (or add a new migration) to rotate credentials post-deployment.
+### Admin accounts
+
+The live site has a single admin account, managed directly in the database — there are no admin env vars or registration flow. To change the password or add another admin:
+
+1. Generate a bcrypt hash locally (you'll be prompted for the password):
+
+   ```bash
+   htpasswd -nBC 10 "" | tr -d ':\n'
+   ```
+
+2. Update the existing row, or insert a new one, in the `admins` table:
+
+   ```sql
+   UPDATE admins SET password_hash = '<bcrypt-hash>' WHERE email = '<admin-email>';
+
+   INSERT INTO admins (id, email, password_hash, created_at)
+   VALUES (gen_random_uuid(), '<admin-email>', '<bcrypt-hash>', now());
+   ```
+
+**Local dev** uses the accounts created by the initial admin-seeding Flyway migration, `backend/src/main/java/db/migration/V4__SeedAdminAccounts.java` — see that file for the local-dev logins. On a fresh database it seeds two admins, from `ADMIN1_EMAIL`/`ADMIN1_PASSWORD` and `ADMIN2_EMAIL`/`ADMIN2_PASSWORD` if set, otherwise from placeholder defaults.
+
+> **Warning:** if the production database is ever recreated, V4 runs again and re-seeds those placeholder admins. Either change the admin credentials immediately afterwards (and delete the second admin row), or set `ADMIN1_*` and `ADMIN2_*` env vars in Render before the first deploy against the new database.
 
 Verify:
 
@@ -70,16 +91,16 @@ Open `http://localhost:5173` in a browser. The homepage fetches `GET /api/postca
 
 ## Admin authentication
 
-`GET` endpoints under `/api/postcards` stay public. Creating, updating, or deleting a postcard requires a JWT obtained by logging in as one of the seeded admin accounts.
+`GET` endpoints under `/api/postcards` stay public. Creating, updating, or deleting a postcard requires a JWT obtained by logging in as the admin account (see "Admin accounts" above).
 
 The signing secret is read from the `JWT_SECRET` env var (see `backend/.env.example`); if unset, an insecure development-only default is used (see `application.yml`) — always set a real value before any real deployment. Tokens expire after 24 hours.
 
-**1. Log in to get a token** (using the local-dev placeholder credentials — substitute your own if you set `ADMIN1_EMAIL`/`ADMIN1_PASSWORD`):
+**1. Log in to get a token** (substitute your admin credentials):
 
 ```bash
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin1@example.com","password":"ChangeMe123!"}'
+  -d '{"email":"<admin-email>","password":"<admin-password>"}'
 # {"token":"eyJhbGciOiJIUzI1NiJ9...."}
 ```
 
@@ -90,7 +111,7 @@ A wrong password or unknown email returns `401 Unauthorized`.
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin1@example.com","password":"ChangeMe123!"}' | jq -r .token)
+  -d '{"email":"<admin-email>","password":"<admin-password>"}' | jq -r .token)
 
 curl -X POST http://localhost:8080/api/postcards \
   -H "Authorization: Bearer $TOKEN" \
@@ -131,7 +152,7 @@ The watermark is a semi-transparent, repeating diagonal text pattern (tiled acro
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin1@example.com","password":"ChangeMe123!"}' | jq -r .token)
+  -d '{"email":"<admin-email>","password":"<admin-password>"}' | jq -r .token)
 
 ID=$(curl -s -X POST http://localhost:8080/api/postcards \
   -H "Authorization: Bearer $TOKEN" \
@@ -197,7 +218,7 @@ The homepage (`http://localhost:5173/`) fetches `GET /api/postcards` and renders
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin1@example.com","password":"ChangeMe123!"}' | jq -r .token)
+  -d '{"email":"<admin-email>","password":"<admin-password>"}' | jq -r .token)
 
 for i in 1 2 3; do
   curl -s -X POST http://localhost:8080/api/postcards \
@@ -262,7 +283,7 @@ While building this, fixed a real bug it surfaced: a malformed id (not a valid U
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin1@example.com","password":"ChangeMe123!"}' | jq -r .token)
+  -d '{"email":"<admin-email>","password":"<admin-password>"}' | jq -r .token)
 
 ID=$(curl -s -X POST http://localhost:8080/api/postcards \
   -H "Authorization: Bearer $TOKEN" \
@@ -290,10 +311,10 @@ Then in the browser, check:
 
 `scripts/seed-dummy-data.sh` logs in as an admin, creates 12 made-up postcard records, and uploads a small set of placeholder images (downloaded once from picsum.photos into `~/Desktop/postcard-seed-images`) as each one's front/back images — a quick way to populate the browse grid/search with more than a couple of rows instead of creating postcards one at a time via curl.
 
-Requires `SEED_ADMIN_PASSWORD` (password for one of the seeded admin accounts) as an env var; `SEED_ADMIN_EMAIL` is optional and defaults to `admin1@example.com`.
+Requires `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` (the admin account's login) as env vars; the script exits with an error if either is unset.
 
 ```bash
-SEED_ADMIN_PASSWORD='ChangeMe123!' bash scripts/seed-dummy-data.sh
+SEED_ADMIN_EMAIL='<admin-email>' SEED_ADMIN_PASSWORD='<admin-password>' bash scripts/seed-dummy-data.sh
 ```
 
 ## Project structure
