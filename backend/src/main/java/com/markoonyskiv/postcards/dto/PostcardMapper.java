@@ -15,8 +15,7 @@ public final class PostcardMapper {
                 request.description(),
                 request.color(),
                 request.location(),
-                request.frontImageUrl(),
-                request.backImageUrl());
+                request.frontImageUrl());
     }
 
     public static PostcardResponse toResponse(Postcard postcard) {
@@ -29,7 +28,6 @@ public final class PostcardMapper {
                 postcard.getColor(),
                 postcard.getLocation(),
                 postcard.getFrontImageUrl(),
-                postcard.getBackImageUrl(),
                 postcard.getCreatedAt(),
                 postcard.getUpdatedAt());
     }

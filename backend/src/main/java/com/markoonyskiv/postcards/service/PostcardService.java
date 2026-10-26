@@ -65,7 +65,6 @@ public class PostcardService {
         existing.setColor(updated.getColor());
         existing.setLocation(updated.getLocation());
         existing.setFrontImageUrl(updated.getFrontImageUrl());
-        existing.setBackImageUrl(updated.getBackImageUrl());
         return postcardRepository.save(existing);
     }
 

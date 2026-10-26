@@ -16,29 +16,20 @@ public class PostcardImageService {
         this.imageStorageService = imageStorageService;
     }
 
-    public Postcard uploadImages(UUID id, MultipartFile front, MultipartFile back) {
-        boolean hasFront = front != null && !front.isEmpty();
-        boolean hasBack = back != null && !back.isEmpty();
-        if (!hasFront && !hasBack) {
-            throw new InvalidImageException("At least one of 'front' or 'back' image files must be provided");
+    public Postcard uploadImages(UUID id, MultipartFile front) {
+        if (front == null || front.isEmpty()) {
+            throw new InvalidImageException("A 'front' image file must be provided");
         }
 
         Postcard postcard = postcardService.getById(id);
-        if (hasFront) {
-            imageStorageService.deleteIfPresent(postcard.getFrontImageUrl());
-            postcard.setFrontImageUrl(imageStorageService.store(id, "front", front));
-        }
-        if (hasBack) {
-            imageStorageService.deleteIfPresent(postcard.getBackImageUrl());
-            postcard.setBackImageUrl(imageStorageService.store(id, "back", back));
-        }
+        imageStorageService.deleteIfPresent(postcard.getFrontImageUrl());
+        postcard.setFrontImageUrl(imageStorageService.store(id, "front", front));
         return postcardService.save(postcard);
     }
 
     public void deletePostcardAndImages(UUID id) {
         Postcard postcard = postcardService.getById(id);
         imageStorageService.deleteIfPresent(postcard.getFrontImageUrl());
-        imageStorageService.deleteIfPresent(postcard.getBackImageUrl());
         postcardService.delete(id);
     }
 }

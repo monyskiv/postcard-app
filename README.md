@@ -123,8 +123,7 @@ curl -X POST http://localhost:8080/api/postcards \
     "description": "A view of the opera house.",
     "color": "BLACK_AND_WHITE",
     "location": "Odesa, Ukraine",
-    "frontImageUrl": "https://example.com/odesa-front.jpg",
-    "backImageUrl": "https://example.com/odesa-back.jpg"
+    "frontImageUrl": "https://example.com/odesa-front.jpg"
   }'
 # 201 Created with the new postcard
 ```
@@ -133,7 +132,7 @@ Omitting the `Authorization` header, or sending a malformed/expired/invalid toke
 
 ## Image upload (Cloudflare R2)
 
-`POST /api/postcards/{id}/images` uploads front and/or back images for a postcard to Cloudflare R2 and updates `frontImageUrl`/`backImageUrl` with the resulting public URL. It's admin-only, same as the other mutating postcard endpoints.
+`POST /api/postcards/{id}/images` uploads a postcard's image (a single scan of the front and back together) to Cloudflare R2 and updates `frontImageUrl` with the resulting public URL. It's admin-only, same as the other mutating postcard endpoints.
 
 Configure R2 via env vars (see `backend/.env.example`):
 
@@ -157,23 +156,22 @@ TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
 ID=$(curl -s -X POST http://localhost:8080/api/postcards \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"title":"Test","author":"Unknown","description":"...","color":"COLOR","location":"Kyiv","frontImageUrl":"https://example.com/placeholder.jpg","backImageUrl":"https://example.com/placeholder.jpg"}' \
+  -d '{"title":"Test","author":"Unknown","description":"...","color":"COLOR","location":"Kyiv","frontImageUrl":"https://example.com/placeholder.jpg"}' \
   | jq -r .id)
 ```
 
-**2. Upload images** — `front` and `back` are both optional, but at least one is required; each is a normal multipart file part:
+**2. Upload the image** — sent as a single multipart file part named `front`:
 
 ```bash
 curl -X POST "http://localhost:8080/api/postcards/$ID/images" \
   -H "Authorization: Bearer $TOKEN" \
-  -F "front=@/path/to/front.jpg;type=image/jpeg" \
-  -F "back=@/path/to/back.jpg;type=image/jpeg"
-# 200 OK with the updated postcard, frontImageUrl/backImageUrl now point at R2
+  -F "front=@/path/to/scan.jpg;type=image/jpeg"
+# 200 OK with the updated postcard, frontImageUrl now points at R2
 ```
 
-Omitting the token returns `401`. An unsupported content type, an oversized file, or a request with neither `front` nor `back` returns `400` with a JSON body like `{"message":"..."}`.
+Omitting the token returns `401`. An unsupported content type, an oversized file, or a request without a `front` file returns `400` with a JSON body like `{"message":"..."}`.
 
-**3. Verify the image actually landed in the bucket** — the response's `frontImageUrl`/`backImageUrl` should load directly in a browser or via curl (this fetches straight from `R2_PUBLIC_BASE_URL`, not through the backend):
+**3. Verify the image actually landed in the bucket** — the response's `frontImageUrl` should load directly in a browser or via curl (this fetches straight from `R2_PUBLIC_BASE_URL`, not through the backend):
 
 ```bash
 curl -I "$(curl -s http://localhost:8080/api/postcards/$ID | jq -r .frontImageUrl)"
@@ -182,7 +180,7 @@ curl -I "$(curl -s http://localhost:8080/api/postcards/$ID | jq -r .frontImageUr
 
 You can also check the Cloudflare dashboard (R2 → your bucket) and look for an object under `postcards/<id>/`, or list it with any S3-compatible client pointed at `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com` using your `R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY`.
 
-**4. Visually confirm the watermark** — open the `frontImageUrl`/`backImageUrl` from the response directly in a browser (or reuse the same URL from step 3):
+**4. Visually confirm the watermark** — open the `frontImageUrl` from the response directly in a browser (or reuse the same URL from step 3):
 
 ```bash
 curl -s http://localhost:8080/api/postcards/$ID | jq -r .frontImageUrl
@@ -191,7 +189,7 @@ curl -s http://localhost:8080/api/postcards/$ID | jq -r .frontImageUrl
 
 You should see "Ukrainian Postcards" repeated diagonally across the image, semi-transparent and legible over both light and dark areas of the photo, without hiding the postcard itself.
 
-**5. Deleting a postcard also deletes its images from R2** — `DELETE /api/postcards/{id}` removes the front/back objects from the bucket before removing the DB row (a postcard whose images were never uploaded — still pointing at some other URL — deletes cleanly too, nothing to remove). Confirm the image is actually gone with a `HEAD` request before and after:
+**5. Deleting a postcard also deletes its image from R2** — `DELETE /api/postcards/{id}` removes the image object from the bucket before removing the DB row (a postcard whose images were never uploaded — still pointing at some other URL — deletes cleanly too, nothing to remove). Confirm the image is actually gone with a `HEAD` request before and after:
 
 ```bash
 FRONT_URL=$(curl -s http://localhost:8080/api/postcards/$ID | jq -r .frontImageUrl)
@@ -224,7 +222,7 @@ for i in 1 2 3; do
   curl -s -X POST http://localhost:8080/api/postcards \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
-    -d "{\"title\":\"Sample Postcard $i\",\"year\":$((1900+i)),\"author\":\"Unknown\",\"description\":\"...\",\"color\":\"COLOR\",\"location\":\"City $i\",\"frontImageUrl\":\"https://placehold.co/400x300?text=Front+$i\",\"backImageUrl\":\"https://placehold.co/400x300?text=Back+$i\"}" > /dev/null
+    -d "{\"title\":\"Sample Postcard $i\",\"year\":$((1900+i)),\"author\":\"Unknown\",\"description\":\"...\",\"color\":\"COLOR\",\"location\":\"City $i\",\"frontImageUrl\":\"https://placehold.co/400x300?text=Postcard+$i\"}" > /dev/null
 done
 ```
 
@@ -278,7 +276,7 @@ curl -s "http://localhost:8080/api/postcards/search?q=nonexistentxyz" | jq
 
 While building this, fixed a real bug it surfaced: a malformed id (not a valid UUID — e.g. `/postcards/not-a-real-id`) was returning `401 Unauthorized` instead of `400 Bad Request`. The cause: Spring MVC's `MethodArgumentTypeMismatchException` for the bad UUID triggers Boot's internal forward to `/error` to render the error body, and since `/error` wasn't itself listed as `permitAll`, Spring Security re-evaluated that forward as a fresh anonymous request against `anyRequest().authenticated()` and masked the real 400 with its own 401. Fixed by permitting `/error` in `SecurityConfig`, with a regression test (`getPostcard_malformedId_returns400NotUnauthorized`). The frontend treats both 404 (well-formed id, doesn't exist) and 400 (malformed id) as "not found" — a user typing a bad URL shouldn't be able to tell the difference.
 
-**To get a real id to test with**, create a postcard and upload real images (reusing the same flow from "Image upload" above):
+**To get a real id to test with**, create a postcard and upload a real image (reusing the same flow from "Image upload" above):
 
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
@@ -288,20 +286,19 @@ TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
 ID=$(curl -s -X POST http://localhost:8080/api/postcards \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"title":"Greetings from Lviv","year":1932,"author":"Unknown","description":"A hand-tinted view of the old town square.","color":"COLOR","location":"Lviv, Ukraine","frontImageUrl":"placeholder","backImageUrl":"placeholder"}' \
+  -d '{"title":"Greetings from Lviv","year":1932,"author":"Unknown","description":"A hand-tinted view of the old town square.","color":"COLOR","location":"Lviv, Ukraine","frontImageUrl":"placeholder"}' \
   | jq -r .id)
 
 curl -s -X POST "http://localhost:8080/api/postcards/$ID/images" \
   -H "Authorization: Bearer $TOKEN" \
-  -F "front=@/path/to/front.jpg;type=image/jpeg" \
-  -F "back=@/path/to/back.jpg;type=image/jpeg" > /dev/null
+  -F "front=@/path/to/scan.jpg;type=image/jpeg" > /dev/null
 
 echo "http://localhost:5173/postcards/$ID"
 ```
 
 Then in the browser, check:
 
-- **Valid id** — open the URL printed above (or click any card with real images from the grid). You should see both images at a reasonable size side by side, the title as a heading, and a metadata block with year/author/color/location, plus the description text below.
+- **Valid id** — open the URL printed above (or click any card with a real image from the grid). You should see the image at a reasonable size, the title as a heading, and a metadata block with year/author/color/location, plus the description text below.
 - **Loading state** — briefly visible on navigation ("Loading postcard…"); easiest to catch on a throttled network (DevTools → Network → Slow 3G).
 - **Well-formed but nonexistent id** — try `http://localhost:5173/postcards/00000000-0000-0000-0000-000000000000` (or any real id you've since deleted). Should show "Postcard not found. It may have been removed." — not a blank page, not a console error.
 - **Malformed id** — try `http://localhost:5173/postcards/not-a-real-id`. Same "not found" message (verifies the 400-vs-401 fix above didn't leak through as a raw error).
@@ -309,9 +306,11 @@ Then in the browser, check:
 
 ## Seeding sample data
 
-`scripts/seed-dummy-data.sh` logs in as an admin, creates 12 made-up postcard records, and uploads a small set of placeholder images (downloaded once from picsum.photos into `~/Desktop/postcard-seed-images`) as each one's front/back images — a quick way to populate the browse grid/search with more than a couple of rows instead of creating postcards one at a time via curl.
+`scripts/seed-dummy-data.sh` logs in as an admin, creates 12 made-up postcard records, and uploads a small set of placeholder images (downloaded once from picsum.photos into `~/Desktop/postcard-seed-images`) as each one's image — a quick way to populate the browse grid/search with more than a couple of rows instead of creating postcards one at a time via curl.
 
 Requires `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` (the admin account's login) as env vars; the script exits with an error if either is unset.
+
+**Local use only — never run this against production.** It targets `http://localhost:8080` and creates fake records with placeholder images.
 
 ```bash
 SEED_ADMIN_EMAIL='<admin-email>' SEED_ADMIN_PASSWORD='<admin-password>' bash scripts/seed-dummy-data.sh

@@ -11,6 +11,5 @@ public record PostcardRequest(
         String description,
         @NotNull PostcardColor color,
         String location,
-        @NotBlank String frontImageUrl,
-        @NotBlank String backImageUrl) {
+        @NotBlank String frontImageUrl) {
 }

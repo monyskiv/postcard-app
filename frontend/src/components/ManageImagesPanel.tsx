@@ -51,7 +51,7 @@ export function ManageImagesPanel({ token, postcard, onUploaded, onDone, onUnaut
     setError(null);
     setUploading(true);
     try {
-      const updated = await uploadPostcardImages(token, postcard.id, front, null);
+      const updated = await uploadPostcardImages(token, postcard.id, front);
       onUploaded(updated);
       setFront(null);
       setSuccessMessage("Image updated successfully.");

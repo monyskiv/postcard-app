@@ -124,7 +124,7 @@ export function AdminDashboard({ token }: { token: string }) {
         // postcard just created, rather than requiring an extra click.
         setImagesTarget(created);
       } else if (formMode === "edit" && formTarget) {
-        await updatePostcard(token, formTarget.id, values, formTarget.frontImageUrl, formTarget.backImageUrl);
+        await updatePostcard(token, formTarget.id, values, formTarget.frontImageUrl);
         setFormMode("closed");
         setFormTarget(null);
         loadPostcards();

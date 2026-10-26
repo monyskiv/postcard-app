@@ -27,8 +27,7 @@ class PostcardRepositoryTest {
                 "A hand-tinted view of the old town square.",
                 PostcardColor.COLOR,
                 "Lviv, Ukraine",
-                "https://example.com/front.jpg",
-                "https://example.com/back.jpg");
+                "https://example.com/front.jpg");
 
         Postcard saved = postcardRepository.saveAndFlush(postcard);
         UUID id = saved.getId();
@@ -46,6 +45,5 @@ class PostcardRepositoryTest {
         assertThat(found.get().getColor()).isEqualTo(PostcardColor.COLOR);
         assertThat(found.get().getLocation()).isEqualTo("Lviv, Ukraine");
         assertThat(found.get().getFrontImageUrl()).isEqualTo("https://example.com/front.jpg");
-        assertThat(found.get().getBackImageUrl()).isEqualTo("https://example.com/back.jpg");
     }
 }

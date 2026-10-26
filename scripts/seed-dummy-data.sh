@@ -47,14 +47,13 @@ for entry in "${POSTCARDS[@]}"; do
   IFS='|' read -r TITLE YEAR AUTHOR DESC COLOR LOCATION <<< "$entry"
   i=$((i+1))
   FRONT_IMG="$IMG_DIR/sample$(( (i % 4) + 1 )).jpg"
-  BACK_IMG="$IMG_DIR/sample$(( ((i+1) % 4) + 1 )).jpg"
 
   echo "Creating ($i/12): $TITLE"
 
   RESP=$(curl -s -X POST "$API/postcards" \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
-    -d "{\"title\":\"$TITLE\",\"year\":$YEAR,\"author\":\"$AUTHOR\",\"description\":\"$DESC\",\"color\":\"$COLOR\",\"location\":\"$LOCATION\",\"frontImageUrl\":\"placeholder\",\"backImageUrl\":\"placeholder\"}")
+    -d "{\"title\":\"$TITLE\",\"year\":$YEAR,\"author\":\"$AUTHOR\",\"description\":\"$DESC\",\"color\":\"$COLOR\",\"location\":\"$LOCATION\",\"frontImageUrl\":\"placeholder\"}")
 
   ID=$(echo "$RESP" | jq -r .id)
 
@@ -65,10 +64,9 @@ for entry in "${POSTCARDS[@]}"; do
 
   curl -s -X POST "$API/postcards/$ID/images" \
     -H "Authorization: Bearer $TOKEN" \
-    -F "front=@$FRONT_IMG;type=image/jpeg" \
-    -F "back=@$BACK_IMG;type=image/jpeg" > /dev/null
+    -F "front=@$FRONT_IMG;type=image/jpeg" > /dev/null
 
-  echo "  Created and uploaded images for $ID"
+  echo "  Created and uploaded image for $ID"
 done
 
 echo "Done. 12 postcards seeded."

@@ -30,7 +30,6 @@ export interface PostcardDetail {
   color: "COLOR" | "BLACK_AND_WHITE";
   location: string | null;
   frontImageUrl: string;
-  backImageUrl: string;
   createdAt: string;
   updatedAt: string;
 }
