@@ -53,8 +53,7 @@ class PostcardControllerIntegrationTest {
                 "A hand-tinted view of the old town square.",
                 PostcardColor.COLOR,
                 "Lviv, Ukraine",
-                "https://example.com/front.jpg",
-                "https://example.com/back.jpg");
+                "https://example.com/front.jpg");
         return postcardRepository.saveAndFlush(postcard);
     }
 
@@ -66,8 +65,7 @@ class PostcardControllerIntegrationTest {
                 "A view of the opera house.",
                 PostcardColor.BLACK_AND_WHITE,
                 "Odesa, Ukraine",
-                "https://example.com/odesa-front.jpg",
-                "https://example.com/odesa-back.jpg");
+                "https://example.com/odesa-front.jpg");
     }
 
     @Test
@@ -106,7 +104,7 @@ class PostcardControllerIntegrationTest {
                 .andExpect(jsonPath("$.id").value(saved.getId().toString()))
                 .andExpect(jsonPath("$.title").value("Greetings from Lviv"))
                 .andExpect(jsonPath("$.author").value("Unknown"))
-                .andExpect(jsonPath("$.backImageUrl").value("https://example.com/back.jpg"));
+                .andExpect(jsonPath("$.frontImageUrl").value("https://example.com/front.jpg"));
     }
 
     @Test

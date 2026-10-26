@@ -39,9 +39,6 @@ public class Postcard {
     @Column(name = "front_image_url", nullable = false, length = 2048)
     private String frontImageUrl;
 
-    @Column(name = "back_image_url", nullable = false, length = 2048)
-    private String backImageUrl;
-
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -54,7 +51,7 @@ public class Postcard {
     }
 
     public Postcard(String title, Integer year, String author, String description, PostcardColor color,
-            String location, String frontImageUrl, String backImageUrl) {
+            String location, String frontImageUrl) {
         this.title = title;
         this.year = year;
         this.author = author;
@@ -62,7 +59,6 @@ public class Postcard {
         this.color = color;
         this.location = location;
         this.frontImageUrl = frontImageUrl;
-        this.backImageUrl = backImageUrl;
     }
 
     public UUID getId() {
@@ -123,14 +119,6 @@ public class Postcard {
 
     public void setFrontImageUrl(String frontImageUrl) {
         this.frontImageUrl = frontImageUrl;
-    }
-
-    public String getBackImageUrl() {
-        return backImageUrl;
-    }
-
-    public void setBackImageUrl(String backImageUrl) {
-        this.backImageUrl = backImageUrl;
     }
 
     public Instant getCreatedAt() {

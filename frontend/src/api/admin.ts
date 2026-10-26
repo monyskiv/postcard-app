@@ -44,9 +44,9 @@ export async function createPostcard(
   const response = await adminFetch(token, `/api/postcards`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    // Backend requires non-blank front/back image URLs on create; the real
-    // images are attached afterward via the separate "manage images" step.
-    body: JSON.stringify({ ...input, frontImageUrl: "placeholder", backImageUrl: "placeholder" }),
+    // Backend requires a non-blank image URL on create; the real image is
+    // attached afterward via the separate "manage images" step.
+    body: JSON.stringify({ ...input, frontImageUrl: "placeholder" }),
   });
   if (!response.ok) {
     throw new Error(await errorMessage(response, `Failed to create postcard (status ${response.status})`));
@@ -59,12 +59,11 @@ export async function updatePostcard(
   id: string,
   input: PostcardMetadataInput,
   frontImageUrl: string,
-  backImageUrl: string,
 ): Promise<PostcardDetail> {
   const response = await adminFetch(token, `/api/postcards/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...input, frontImageUrl, backImageUrl }),
+    body: JSON.stringify({ ...input, frontImageUrl }),
   });
   if (!response.ok) {
     throw new Error(await errorMessage(response, `Failed to update postcard (status ${response.status})`));
@@ -82,12 +81,10 @@ export async function deletePostcard(token: string, id: string): Promise<void> {
 export async function uploadPostcardImages(
   token: string,
   id: string,
-  front: File | null,
-  back: File | null,
+  front: File,
 ): Promise<PostcardDetail> {
   const formData = new FormData();
-  if (front) formData.append("front", front);
-  if (back) formData.append("back", back);
+  formData.append("front", front);
 
   const response = await adminFetch(token, `/api/postcards/${id}/images`, {
     method: "POST",

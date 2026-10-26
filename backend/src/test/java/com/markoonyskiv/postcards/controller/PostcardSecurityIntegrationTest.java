@@ -38,8 +38,7 @@ class PostcardSecurityIntegrationTest {
                 "A view of the opera house.",
                 PostcardColor.BLACK_AND_WHITE,
                 "Odesa, Ukraine",
-                "https://example.com/odesa-front.jpg",
-                "https://example.com/odesa-back.jpg");
+                "https://example.com/odesa-front.jpg");
     }
 
     @Test

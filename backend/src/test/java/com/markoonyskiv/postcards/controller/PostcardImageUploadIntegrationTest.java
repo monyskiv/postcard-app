@@ -75,13 +75,11 @@ class PostcardImageUploadIntegrationTest {
                 "A hand-tinted view of the old town square.",
                 PostcardColor.COLOR,
                 "Lviv, Ukraine",
-                "https://example.com/old-front.jpg",
-                "https://example.com/old-back.jpg");
+                "https://example.com/old-front.jpg");
         return postcardRepository.saveAndFlush(postcard);
     }
 
     private static final String EXISTING_FRONT_KEY = "postcards/existing/front-abc123.jpg";
-    private static final String EXISTING_BACK_KEY = "postcards/existing/back-def456.jpg";
 
     private Postcard savePostcardWithR2Images() {
         Postcard postcard = new Postcard(
@@ -91,8 +89,7 @@ class PostcardImageUploadIntegrationTest {
                 "A hand-tinted view of the old town square.",
                 PostcardColor.COLOR,
                 "Lviv, Ukraine",
-                "https://pub-test.r2.dev/" + EXISTING_FRONT_KEY,
-                "https://pub-test.r2.dev/" + EXISTING_BACK_KEY);
+                "https://pub-test.r2.dev/" + EXISTING_FRONT_KEY);
         return postcardRepository.saveAndFlush(postcard);
     }
 
@@ -114,40 +111,18 @@ class PostcardImageUploadIntegrationTest {
                 .thenReturn(PutObjectResponse.builder().build());
 
         MockMultipartFile front = new MockMultipartFile("front", "front.png", "image/png", samplePngBytes(200, 100));
-        MockMultipartFile back = new MockMultipartFile("back", "back.png", "image/png", samplePngBytes(200, 100));
 
         mockMvc.perform(multipart("/api/postcards/{id}/images", saved.getId())
                         .file(front)
-                        .file(back)
                         .header(HttpHeaders.AUTHORIZATION, authHeader()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.frontImageUrl")
-                        .value(startsWith("https://pub-test.r2.dev/postcards/" + saved.getId() + "/front-")))
-                .andExpect(jsonPath("$.backImageUrl")
-                        .value(startsWith("https://pub-test.r2.dev/postcards/" + saved.getId() + "/back-")));
+                        .value(startsWith("https://pub-test.r2.dev/postcards/" + saved.getId() + "/front-")));
 
-        verify(r2Client, times(2)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+        verify(r2Client, times(1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
 
         Postcard updated = postcardRepository.findById(saved.getId()).orElseThrow();
         assertThat(updated.getFrontImageUrl()).startsWith("https://pub-test.r2.dev/postcards/");
-        assertThat(updated.getBackImageUrl()).startsWith("https://pub-test.r2.dev/postcards/");
-    }
-
-    @Test
-    void uploadImages_onlyFrontProvided_leavesBackUnchanged() throws Exception {
-        Postcard saved = saveSamplePostcard();
-        when(r2Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
-                .thenReturn(PutObjectResponse.builder().build());
-
-        MockMultipartFile front = new MockMultipartFile("front", "front.png", "image/png", samplePngBytes(200, 100));
-
-        mockMvc.perform(multipart("/api/postcards/{id}/images", saved.getId())
-                        .file(front)
-                        .header(HttpHeaders.AUTHORIZATION, authHeader()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.backImageUrl").value("https://example.com/old-back.jpg"));
-
-        verify(r2Client, times(1)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
     @Test
@@ -231,11 +206,10 @@ class PostcardImageUploadIntegrationTest {
         Postcard updated = postcardRepository.findById(saved.getId()).orElseThrow();
         assertThat(updated.getFrontImageUrl())
                 .startsWith("https://pub-test.r2.dev/postcards/" + saved.getId() + "/front-");
-        assertThat(updated.getBackImageUrl()).isEqualTo("https://pub-test.r2.dev/" + EXISTING_BACK_KEY);
     }
 
     @Test
-    void deletePostcard_withR2Images_deletesBothFromR2AndRemovesRecord() throws Exception {
+    void deletePostcard_withR2Image_deletesItFromR2AndRemovesRecord() throws Exception {
         Postcard saved = savePostcardWithR2Images();
 
         mockMvc.perform(delete("/api/postcards/{id}", saved.getId())
@@ -243,10 +217,10 @@ class PostcardImageUploadIntegrationTest {
                 .andExpect(status().isNoContent());
 
         ArgumentCaptor<DeleteObjectRequest> deleteCaptor = ArgumentCaptor.forClass(DeleteObjectRequest.class);
-        verify(r2Client, times(2)).deleteObject(deleteCaptor.capture());
+        verify(r2Client, times(1)).deleteObject(deleteCaptor.capture());
         assertThat(deleteCaptor.getAllValues())
                 .extracting(DeleteObjectRequest::key)
-                .containsExactlyInAnyOrder(EXISTING_FRONT_KEY, EXISTING_BACK_KEY);
+                .containsExactly(EXISTING_FRONT_KEY);
         assertThat(deleteCaptor.getAllValues()).allMatch(req -> req.bucket().equals("test-bucket"));
 
         assertThat(postcardRepository.findById(saved.getId())).isEmpty();

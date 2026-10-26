@@ -22,8 +22,7 @@ A web app for browsing and managing a personal postcard collection (500–5,000 
 | description | text | free-form |
 | color | enum: `COLOR`, `BLACK_AND_WHITE` | required |
 | location | string | place **depicted** on the postcard — plain text v1, structured later if needed |
-| front_image_url | string | required |
-| back_image_url | string | required |
+| front_image_url | string | required — a single scan of the front and back together |
 | created_at / updated_at | timestamp | auto |
 
 **Note:** `location` is scoped to depicted location only (not mailing origin/destination). If postmark/mailing info becomes relevant later, add it as a separate field (e.g. `origin_location`) rather than overloading this one.
@@ -49,16 +48,16 @@ One admin account, no public self-registration.
 - `POST /api/auth/login` — returns JWT
 - `POST /api/postcards` — create
 - `PUT /api/postcards/{id}` — update
-- `DELETE /api/postcards/{id}` — delete record; also deletes the associated front/back images from R2 so no orphaned objects remain in the bucket
-- `POST /api/postcards/{id}/images` — upload front/back images (proxies to R2 or issues a pre-signed upload URL). Re-uploading (replacing an existing image on a postcard that already has one) deletes the old R2 object before storing the new one, for the same reason.
+- `DELETE /api/postcards/{id}` — delete record; also deletes the associated image from R2 so no orphaned objects remain in the bucket
+- `POST /api/postcards/{id}/images` — upload the postcard's single image as the `front` multipart part (proxies to R2 or issues a pre-signed upload URL). Re-uploading (replacing an existing image on a postcard that already has one) deletes the old R2 object before storing the new one, for the same reason.
 
 ## Pages
 
 1. **Home** — intro + entry point to search/browse (mirrors the CatalogIt reference: could show category/color counts as a landing overview)
-2. **Search / Browse** — search box (dynamic — debounced, hits `/search` as you type), filter by color/year/location, grid of results (thumbnail = front image, title, year)
-3. **Postcard Detail** — full front + back image, all metadata; "related postcards" is v2 (noted below)
+2. **Search / Browse** — search box (dynamic — debounced, hits `/search` as you type), filter by color/year/location, grid of results (thumbnail = postcard image, title, year)
+3. **Postcard Detail** — the postcard image (front and back scanned together), all metadata; "related postcards" is v2 (noted below)
 4. **Admin Login** — email/password
-5. **Admin Dashboard** — table of postcards with add/edit/delete; edit form handles metadata + front/back image upload
+5. **Admin Dashboard** — table of postcards with add/edit/delete; edit form handles metadata + image upload
 
 ## Search (v1 scope)
 Dynamic search box filtering on `title`, `author`, `location`, `description` (simple `ILIKE`/full-text query in Postgres — no need for Elasticsearch at this scale). Debounce input ~300ms before hitting the API.
@@ -81,7 +80,7 @@ One admin account, JWT-based session, simple email+password login. No public acc
 | Database | Neon | free tier, no expiry (unlike Render's free Postgres, which expires 30 days after creation) |
 | Images | Cloudflare R2 | free up to 10GB storage, no egress fees |
 
-At 500–5,000 postcards with 2 images each, budget for image storage: even at ~2MB/image average, 5,000 postcards × 2 images × 2MB ≈ 20GB — likely to exceed R2's 10GB free tier eventually. Worth compressing/resizing images on upload (e.g. cap at 1600px wide) to stay under the limit longer.
+At 500–5,000 postcards with 1 image each, budget for image storage: even at ~2MB/image average, 5,000 postcards × 2MB ≈ 10GB — right at R2's 10GB free tier. Worth compressing/resizing images on upload (e.g. cap at 1600px wide) to stay under the limit longer.
 
 ## Watermarking
 Images are watermarked server-side, baked into the pixels, before being stored in R2 — not a client-side/CSS overlay, since those don't survive a right-click save and would defeat the purpose. No clean/original copy is kept in the cloud (originals already live on the external hard drive used for uploading, so a duplicate unwatermarked cloud copy is unnecessary storage cost). Only the watermarked version is ever stored and served.

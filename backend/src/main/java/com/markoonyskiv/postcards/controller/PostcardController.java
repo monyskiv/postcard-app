@@ -85,9 +85,8 @@ public class PostcardController {
     @PostMapping("/{id}/images")
     public PostcardResponse uploadImages(
             @PathVariable UUID id,
-            @RequestParam(required = false) MultipartFile front,
-            @RequestParam(required = false) MultipartFile back) {
-        Postcard updated = postcardImageService.uploadImages(id, front, back);
+            @RequestParam(required = false) MultipartFile front) {
+        Postcard updated = postcardImageService.uploadImages(id, front);
         return PostcardMapper.toResponse(updated);
     }
 }

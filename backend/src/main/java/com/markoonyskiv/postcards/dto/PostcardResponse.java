@@ -13,7 +13,6 @@ public record PostcardResponse(
         PostcardColor color,
         String location,
         String frontImageUrl,
-        String backImageUrl,
         Instant createdAt,
         Instant updatedAt) {
 }

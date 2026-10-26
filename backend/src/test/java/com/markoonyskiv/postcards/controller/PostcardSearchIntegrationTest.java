@@ -35,8 +35,7 @@ class PostcardSearchIntegrationTest {
                 "A hand-tinted view of the old town square.",
                 PostcardColor.COLOR,
                 "Lviv, Ukraine",
-                "https://example.com/lviv-front.jpg",
-                "https://example.com/lviv-back.jpg"));
+                "https://example.com/lviv-front.jpg"));
         postcardRepository.saveAndFlush(new Postcard(
                 "Paris skyline",
                 1925,
@@ -44,8 +43,7 @@ class PostcardSearchIntegrationTest {
                 "A view of the Eiffel tower at dusk.",
                 PostcardColor.BLACK_AND_WHITE,
                 "Paris, France",
-                "https://example.com/paris-front.jpg",
-                "https://example.com/paris-back.jpg"));
+                "https://example.com/paris-front.jpg"));
         postcardRepository.saveAndFlush(new Postcard(
                 "Winter in Odesa",
                 1950,
@@ -53,8 +51,7 @@ class PostcardSearchIntegrationTest {
                 "A snowy view of the opera house.",
                 PostcardColor.COLOR,
                 "Odesa, Ukraine",
-                "https://example.com/odesa-front.jpg",
-                "https://example.com/odesa-back.jpg"));
+                "https://example.com/odesa-front.jpg"));
     }
 
     @Test
