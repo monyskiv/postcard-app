@@ -223,6 +223,78 @@ code {
   cursor: not-allowed;
 }
 
+/* Browse page pagination bar: Prev, numbered pages with "…" gaps, Next. */
+.browse-results {
+  scroll-margin-top: 16px;
+}
+
+.page-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 32px;
+}
+
+.page-nav-pages {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.page-nav-step,
+.page-nav-page {
+  min-width: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+  font: inherit;
+}
+
+.page-nav-step:hover:not(:disabled),
+.page-nav-page:hover {
+  border-color: var(--accent-border);
+}
+
+.page-nav-step:focus-visible,
+.page-nav-page:focus-visible {
+  outline: none;
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.page-nav-step:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-nav-page[aria-current="page"] {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-weight: 600;
+  cursor: default;
+}
+
+.page-nav-ellipsis {
+  min-width: 24px;
+  text-align: center;
+  color: var(--text);
+}
+
+/* Narrow screens: just Prev, the current page, and Next. */
+@media (max-width: 480px) {
+  .page-nav-pages li:not(.is-current) {
+    display: none;
+  }
+}
+
 .back-link {
   color: var(--accent);
   text-decoration: none;
