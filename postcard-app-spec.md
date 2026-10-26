@@ -1,7 +1,7 @@
 # Postcard Collection Web App — Spec (v1)
 
 ## Overview
-A web app for browsing and managing a personal postcard collection (500–5,000 items). Public visitors can browse and search postcards; two admins can add, edit, and delete records.
+A web app for browsing and managing a personal postcard collection (500–5,000 items). Public visitors can browse and search postcards; an admin can add, edit, and delete records.
 
 ## Tech Stack
 - **Frontend:** React
@@ -36,7 +36,7 @@ A web app for browsing and managing a personal postcard collection (500–5,000 
 | password_hash | string | bcrypt |
 | created_at | timestamp | |
 
-Two admin accounts (you + your friend), no public self-registration.
+One admin account, no public self-registration.
 
 ## API Endpoints
 
@@ -57,16 +57,16 @@ Two admin accounts (you + your friend), no public self-registration.
 1. **Home** — intro + entry point to search/browse (mirrors the CatalogIt reference: could show category/color counts as a landing overview)
 2. **Search / Browse** — search box (dynamic — debounced, hits `/search` as you type), filter by color/year/location, grid of results (thumbnail = front image, title, year)
 3. **Postcard Detail** — full front + back image, all metadata; "related postcards" is v2 (noted below)
-4. **Admin Login** — email/password, separate accounts for you and your friend
+4. **Admin Login** — email/password
 5. **Admin Dashboard** — table of postcards with add/edit/delete; edit form handles metadata + front/back image upload
 
 ## Search (v1 scope)
 Dynamic search box filtering on `title`, `author`, `location`, `description` (simple `ILIKE`/full-text query in Postgres — no need for Elasticsearch at this scale). Debounce input ~300ms before hitting the API.
 
 ## Auth
-Two admin accounts, JWT-based session, simple email+password login. No public accounts needed for v1 (browsing is open to everyone).
+One admin account, JWT-based session, simple email+password login. No public accounts needed for v1 (browsing is open to everyone).
 
-**Known open item:** admin credentials are currently seeded once via a Flyway migration using placeholder values (admin1@example.com / ChangeMe123!, etc.) — these are NOT controlled by Render env vars (a migration only runs once, so changing env vars afterward has no effect on already-seeded rows). Before handing this off for real use, real credentials need to be set via a new migration (or a proper credential-management flow), not left as placeholders.
+**Admin account management:** there is one admin. Its credentials are managed directly in the `admins` table (bcrypt hash generated locally, row updated or inserted by hand) — not through env vars or migrations. The V4 migration only seeds accounts on a fresh database (local dev, tests).
 
 ## Out of scope for v1 (explicitly deferred)
 - "Related postcards" / recommendations on the detail page

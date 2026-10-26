@@ -2,7 +2,7 @@
 set -e
 
 API="http://localhost:8080/api"
-EMAIL="${SEED_ADMIN_EMAIL:-admin1@example.com}"
+EMAIL="${SEED_ADMIN_EMAIL:?Set SEED_ADMIN_EMAIL env var before running this script}"
 PASSWORD="${SEED_ADMIN_PASSWORD:?Set SEED_ADMIN_PASSWORD env var before running this script}"
 IMG_DIR="$HOME/Desktop/postcard-seed-images"
 
@@ -10,7 +10,7 @@ echo "Logging in..."
 TOKEN=$(curl -sL -X POST "$API/auth/login" -H "Content-Type: application/json" -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" | jq -r .token)
 
 if [ "$TOKEN" == "null" ] || [ -z "$TOKEN" ]; then
-  echo "Login failed — check EMAIL/PASSWORD at the top of this script."
+  echo "Login failed — check SEED_ADMIN_EMAIL/SEED_ADMIN_PASSWORD."
   exit 1
 fi
 echo "Logged in."
