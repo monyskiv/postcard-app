@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { getPostcard, PostcardNotFoundError, type PostcardDetail } from "../api/postcards";
 
 type Status = "loading" | "not-found" | "error" | "ready";
@@ -18,6 +18,10 @@ function detailRows(postcard: PostcardDetail): { label: string; value: string }[
 
 export function PostcardDetailPage() {
   const { id } = useParams<{ id: string }>();
+  // The browse page passes its URL (page + search) so Back returns there;
+  // direct visits have no state and fall back to the list start.
+  const from = (useLocation().state as { from?: unknown } | null)?.from;
+  const backTo = typeof from === "string" && from.startsWith("/") ? from : "/";
   const [postcard, setPostcard] = useState<PostcardDetail | null>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +58,7 @@ export function PostcardDetailPage() {
 
   return (
     <div className="detail-page">
-      <Link to="/" className="back-link">
+      <Link to={backTo} className="back-link">
         ← Back to browse
       </Link>
 
