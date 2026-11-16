@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { getPostcards, searchPostcards, type PostcardSummary } from "../api/postcards";
 import { Pagination } from "../components/Pagination";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
@@ -22,6 +22,7 @@ export function HomePage() {
   // The URL (?q=...&page=N, page 1-indexed) is the source of truth for what's
   // shown, so refresh and back/forward return to the same results page.
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const urlQuery = searchParams.get("q") ?? "";
   const rawPage = searchParams.get("page");
   const requestedPage = parsePageParam(rawPage);
@@ -143,7 +144,12 @@ export function HomePage() {
           <>
             <div className="postcard-grid">
               {postcards.map((postcard) => (
-                <Link key={postcard.id} to={`/postcards/${postcard.id}`} className="postcard-card">
+                <Link
+                  key={postcard.id}
+                  to={`/postcards/${postcard.id}`}
+                  state={{ from: location.pathname + location.search }}
+                  className="postcard-card"
+                >
                   <img
                     src={postcard.frontImageUrl}
                     alt={postcard.title}
