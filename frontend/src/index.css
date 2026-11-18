@@ -305,7 +305,10 @@ code {
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: 32px;
   align-items: start;
-  margin-top: 20px;
+  margin-top: 12px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
 }
 
 .detail-image-wrap {
@@ -313,11 +316,13 @@ code {
   justify-content: center;
 }
 
-/* Scans may be portrait or landscape: never crop, just fit within the box. */
+/* Scans may be portrait or landscape: never crop, just fit within the box.
+   140px = page padding (48) + back link (~26) + frame margin (12)
+   + frame padding and border (50), so the page never scrolls on desktop. */
 .detail-image {
   display: block;
   max-width: 100%;
-  max-height: 80vh;
+  max-height: calc(100svh - 140px);
   width: auto;
   height: auto;
   object-fit: contain;
@@ -327,7 +332,9 @@ code {
 }
 
 .detail-info h1 {
-  margin: 0 0 16px;
+  font-size: 30px;
+  letter-spacing: -0.3px;
+  margin: 0 0 20px;
 }
 
 .detail-meta {
@@ -345,16 +352,15 @@ code {
 }
 
 .detail-meta dt {
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 15px;
+  font-style: italic;
   color: var(--text);
 }
 
 .detail-meta dd {
   margin: 0;
   color: var(--text-h);
-  font-size: 16px;
+  font-size: 19px;
   line-height: 1.6;
   white-space: pre-line;
 }
@@ -363,6 +369,7 @@ code {
   .detail-layout {
     grid-template-columns: 1fr;
     gap: 24px;
+    padding: 16px;
   }
 
   .detail-image {
