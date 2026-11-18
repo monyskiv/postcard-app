@@ -9,9 +9,7 @@ function detailRows(postcard: PostcardDetail): { label: string; value: string }[
   const rows = [
     { label: "Publisher", value: postcard.author },
     { label: "Date", value: postcard.year != null ? String(postcard.year) : null },
-    { label: "Location", value: postcard.location },
     { label: "Color", value: postcard.color === "COLOR" ? "Color" : "Black and white" },
-    { label: "Description", value: postcard.description },
   ];
   return rows.filter((row): row is { label: string; value: string } => !!row.value?.trim());
 }
